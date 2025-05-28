@@ -113,7 +113,7 @@ if __name__ == "__main__":
     modelo_gemini = inicializar_modelo()
 
     if not modelo_gemini:
-        print("No se pudo iniciar el asistente. Revisa la configuración, la API Key y el archivo prompt.txt.")
+        print("No se pudo iniciar el asistente. Revisa la configuración de credenciales y el archivo prompt.txt.")
     else:
         chat_sesion = iniciar_chat(modelo_gemini)
         if not chat_sesion:
