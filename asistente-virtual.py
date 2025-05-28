@@ -1,7 +1,7 @@
 import google.generativeai as genai
 import os
 from dotenv import load_dotenv
-from google.ai.generativelanguage import GoogleSearchRetrieval # Importar GoogleSearchRetrieval
+from google.ai.generativelanguage import GoogleSearchRetrieval
 
 # Cargar variables de entorno
 load_dotenv(override=True) # Añadir override=True para sobrescribir variables existentes
@@ -47,7 +47,7 @@ except Exception as e:
 # --- Configuración del Asistente Virtual NEAE ---
 
 # Selecciona el modelo.
-MODEL_NAME = "gemini-1.5-flash-latest"
+MODEL_NAME = "gemini-1.5-pro-latest"
 
 def cargar_prompt_desde_archivo(ruta_archivo):
     """Carga el contenido de un archivo de texto."""
@@ -119,12 +119,16 @@ if __name__ == "__main__":
         if not chat_sesion:
             print("No se pudo iniciar la sesión de chat.")
         else:
-            # El LLM debería presentarse según las instrucciones de prompt.txt
-            # Podrías enviar un mensaje inicial como "Hola" o "Preséntate" para que lo haga.
-            print("\n🤖 Asistente NEAE: ¡Hola! Estoy aquí para ayudarte con tus consultas sobre NEAE.")
-            print("Para empezar, por favor, indícame el curso o etapa educativa, el tipo de NEAE y la Comunidad Autónoma.")
-            print("Escribe 'salir' para terminar la conversación.")
+            # Mostrar directamente el mensaje de inicio especificado por el usuario
+            print("\\n📝 Para poder ayudarte de la forma más precisa y útil posible, necesito que me indiques:")
+            print("")
+            print("- **El curso o etapa educativa** (Infantil, Primaria, Secundaria o FP).")
+            print("- **El tipo de NEAE** (por ejemplo: TDAH, dislexia, TEA, discapacidad auditiva, motora, etc.).")
+            print("")
+            print("Una vez que tenga esta información, podré ofrecerte propuestas, recursos y adaptaciones específicas y fundamentadas en la normativa vigente de Andalucía. ¡Gracias! 📘✨")
             print("---")
+            print("Escribe 'salir' para terminar la conversación.")
+            # print("---") # Eliminado un separador extra para que coincida con el formato solicitado
 
             while True:
                 pregunta = input("👤 Tú: ")
