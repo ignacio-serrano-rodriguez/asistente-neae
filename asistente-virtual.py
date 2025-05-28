@@ -3,14 +3,46 @@ import os
 from dotenv import load_dotenv
 from google.ai.generativelanguage import GoogleSearchRetrieval # Importar GoogleSearchRetrieval
 
-# Cargar variables de entorno (API KEY)
-load_dotenv()
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+# Cargar variables de entorno
+load_dotenv(override=True) # Añadir override=True para sobrescribir variables existentes
 
-if not GEMINI_API_KEY:
-    raise ValueError("No se encontró la API Key de Gemini. Asegúrate de que está en el archivo .env como GEMINI_API_KEY.")
+# Configurar credenciales de Google Application Credentials desde un archivo JSON
+credentials_path_from_env_file = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_PATH")
+effective_credentials_path = None
 
-genai.configure(api_key=GEMINI_API_KEY)
+if credentials_path_from_env_file:
+    if os.path.exists(credentials_path_from_env_file):
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials_path_from_env_file
+        effective_credentials_path = credentials_path_from_env_file
+        print(f"Usando credenciales de servicio desde el archivo: {effective_credentials_path}")
+    else:
+        raise FileNotFoundError(
+            f"El archivo de credenciales JSON especificado en GOOGLE_APPLICATION_CREDENTIALS_PATH ({credentials_path_from_env_file}) no se encontró."
+        )
+elif os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+    effective_credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    if not os.path.exists(effective_credentials_path):
+        print(f"Advertencia: El archivo de credenciales JSON especificado por la variable de entorno GOOGLE_APPLICATION_CREDENTIALS ({effective_credentials_path}) no se encontró, pero se intentará usar.")
+    else:
+        print(f"Usando credenciales de servicio desde la variable de entorno GOOGLE_APPLICATION_CREDENTIALS: {effective_credentials_path}")
+else:
+    raise ValueError(
+        "No se encontraron credenciales de Google. "
+        "Define GOOGLE_APPLICATION_CREDENTIALS_PATH en tu archivo .env apuntando a tu archivo de credenciales JSON, "
+        "o configura la variable de entorno GOOGLE_APPLICATION_CREDENTIALS directamente en tu sistema."
+    )
+
+# Configurar la API de Gemini.
+# Al no pasar api_key, la librería usará Application Default Credentials (ADC),
+# que recogerá las credenciales del archivo JSON especificado por GOOGLE_APPLICATION_CREDENTIALS.
+try:
+    genai.configure() # No se pasa api_key, usará ADC
+except Exception as e:
+    print(f"Error al configurar genai con Application Default Credentials: {e}")
+    raise RuntimeError(
+        "No se pudo configurar la API de Gemini con las credenciales proporcionadas. "
+        "Verifica que el archivo de credenciales es válido y que la cuenta de servicio tiene los permisos necesarios (ej. 'Vertex AI User')."
+    ) from e
 
 # --- Configuración del Asistente Virtual NEAE ---
 
