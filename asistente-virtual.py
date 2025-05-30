@@ -119,24 +119,24 @@ if __name__ == "__main__":
         if not chat_sesion:
             print("No se pudo iniciar la sesión de chat.")
         else:
-            # Mostrar directamente el mensaje de inicio especificado por el usuario
-            print("\\n📝 Para poder ayudarte de la forma más precisa y útil posible, necesito que me indiques:")
-            print("")
-            print("- **El curso o etapa educativa** (Infantil, Primaria, Secundaria o FP).")
-            print("- **El tipo de NEAE** (por ejemplo: TDAH, dislexia, TEA, discapacidad auditiva, motora, etc.).")
-            print("")
-            print("Una vez que tenga esta información, podré ofrecerte propuestas, recursos y adaptaciones específicas y fundamentadas en la normativa vigente de Andalucía. ¡Gracias! 📘✨")
             print("---")
+            print("Hola, soy tu Asistente NEAE de Apoyo Docente para Andalucía.")
+            print("Puedes preguntarme sobre adaptaciones, recursos y estrategias para alumnado NEAE.")
             print("Escribe 'salir' para terminar la conversación.")
-            # print("---") # Eliminado un separador extra para que coincida con el formato solicitado
+            print("---")
 
             while True:
-                pregunta = input("👤 Tú: ")
-                if pregunta.lower() == 'salir':
-                    print("🤖 Asistente NEAE: ¡Hasta pronto! Espero haberte sido de ayuda.")
+                try:
+                    pregunta = input("👤 Tú: ")
+                    if pregunta.lower() == 'salir':
+                        print("🤖 Asistente NEAE: ¡Hasta pronto! Espero haberte sido de ayuda.") 
+                        break 
+                    
+                    if pregunta.strip(): 
+                        respuesta = preguntar_al_asistente(chat_sesion, pregunta)
+                        print(f"🤖 Asistente NEAE:{respuesta}") 
+                    # else: # If input is empty or just whitespace, loop again for new input. No action needed.
+                    #    pass
+                except KeyboardInterrupt:
+                    print("\n🤖 Asistente NEAE: Conversación interrumpida. ¡Hasta pronto!")
                     break
-                if pregunta.strip():
-                    respuesta = preguntar_al_asistente(chat_sesion, pregunta)
-                    print(f"🤖 Asistente NEAE:\\n{respuesta}\\n---")
-                else:
-                    print("🤖 Asistente NEAE: Por favor, escribe una pregunta.")
