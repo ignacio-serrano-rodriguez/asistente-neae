@@ -9,20 +9,33 @@ load_dotenv(override=True) # Añadir override=True para sobrescribir variables e
 # Configurar credenciales de Google Application Credentials desde un archivo JSON
 credentials_path_from_env_file = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_PATH")
 effective_credentials_path = None
+script_dir = os.path.dirname(os.path.abspath(__file__)) # Use abspath for __file__ robustness
 
 if credentials_path_from_env_file:
-    if os.path.exists(credentials_path_from_env_file):
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials_path_from_env_file
-        effective_credentials_path = credentials_path_from_env_file
+    # Check if the path from .env is absolute
+    if os.path.isabs(credentials_path_from_env_file):
+        potential_path = credentials_path_from_env_file
+    else:
+        # If relative, resolve it with respect to the script's directory
+        potential_path = os.path.join(script_dir, credentials_path_from_env_file)
+    
+    # Normalize the path for consistent checking and printing
+    potential_path = os.path.normpath(potential_path)
+
+    if os.path.exists(potential_path):
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = potential_path
+        effective_credentials_path = potential_path
         print(f"Usando credenciales de servicio desde el archivo: {effective_credentials_path}")
     else:
+        # Provide both the original user-provided path and the resolved path in the error
         raise FileNotFoundError(
-            f"El archivo de credenciales JSON especificado en GOOGLE_APPLICATION_CREDENTIALS_PATH ({credentials_path_from_env_file}) no se encontró."
+            f"El archivo de credenciales JSON especificado en GOOGLE_APPLICATION_CREDENTIALS_PATH ('{credentials_path_from_env_file}') no se encontró. "
+            f"Se intentó resolver como ruta absoluta: '{potential_path}'."
         )
 elif os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
     effective_credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
     if not os.path.exists(effective_credentials_path):
-        print(f"Advertencia: El archivo de credenciales JSON especificado por la variable de entorno GOOGLE_APPLICATION_CREDENTIALS ({effective_credentials_path}) no se encontró, pero se intentará usar.")
+        print(f"Advertencia: El archivo de credenciales JSON especificado por la variable de entorno GOOGLE_APPLICATION_CREDENTIALS ('{effective_credentials_path}') no se encontró, pero se intentará usar si las librerías de Google lo permiten.")
     else:
         print(f"Usando credenciales de servicio desde la variable de entorno GOOGLE_APPLICATION_CREDENTIALS: {effective_credentials_path}")
 else:
@@ -134,7 +147,7 @@ if __name__ == "__main__":
                     
                     if pregunta.strip(): 
                         respuesta = preguntar_al_asistente(chat_sesion, pregunta)
-                        print(f"🤖 Asistente NEAE:{respuesta}") 
+                        print(f"🤖 Asistente NEAE: {respuesta}") # Added space here
                     # else: # If input is empty or just whitespace, loop again for new input. No action needed.
                     #    pass
                 except KeyboardInterrupt:
