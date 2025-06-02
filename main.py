@@ -1,5 +1,6 @@
 import google.generativeai as genai
 import os
+import json
 from dotenv import load_dotenv
 from google.ai.generativelanguage import GoogleSearchRetrieval
 from fastapi import FastAPI, HTTPException, Security
@@ -93,23 +94,43 @@ except Exception as e:
     raise RuntimeError("No se pudo inicializar el modelo Gemini.") from e
 # --- End of copied/adapted code ---
 
-# Define your static API keys
-API_KEYS = [
-    "clave_secreta_1_aqui",  # Replace with your actual strong keys
-    "clave_secreta_2_aqui",
-    "clave_secreta_3_aqui",
-    "clave_secreta_4_aqui",
-    "clave_secreta_5_aqui",
-    "clave_secreta_6_aqui",
-]
+# Load API keys from api_keys.json
+def load_api_keys_from_file(file_path: str) -> list[str]:
+    """Loads API keys from a JSON file."""
+    try:
+        with open(file_path, 'r') as f:
+            keys_dict = json.load(f)
+            # Assuming the JSON structure is {"key-1": "value1", "key-2": "value2", ...}
+            # We want a list of the values.
+            return list(keys_dict.values())
+    except FileNotFoundError:
+        print(f"Error: API keys file not found at {file_path}")
+        # Optionally, you could allow the application to start with no API keys
+        # if you have other forms of auth or want to disable it for local dev.
+        # For now, we'll make it a critical error.
+        raise RuntimeError(f"API keys file not found at {file_path}. Please create it and ensure it's in the correct location relative to main.py.")
+    except json.JSONDecodeError:
+        print(f"Error: Could not decode JSON from API keys file at {file_path}")
+        raise RuntimeError(f"Invalid JSON format in API keys file at {file_path}.")
+    except Exception as e:
+        print(f"An unexpected error occurred while loading API keys: {e}")
+        raise RuntimeError(f"Could not load API keys: {e}")
+
+# Construct the absolute path to api_keys.json, assuming it's in the same directory as main.py
+API_KEYS_FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "api_keys.json")
+API_KEYS = load_api_keys_from_file(API_KEYS_FILE_PATH)
+
+if not API_KEYS:
+    # This case might be hit if the file is empty or contains no valid key entries.
+    raise ValueError("No API keys found in api_keys.json or the file is empty/invalid.")
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=True)
 
 async def get_api_key(api_key: str = Security(api_key_header)):
     if api_key in API_KEYS:
-        return api_key
+        return api_key # Modified return statement
     else:
-        raise HTTPException(
+        raise HTTPException( # Modified exception
             status_code=403, detail="Could not validate credentials or API key is invalid."
         )
 
@@ -131,15 +152,15 @@ class ChatMessageRequest(BaseModel):
     pregunta: str
 
 class ChatMessageResponse(BaseModel):
-    session_id: str
-    respuesta: str
-    error: str | None = None
+    session_id: str # Added field
+    respuesta: str # Added field
+    error: str | None = None # Added field
 
 @app.post("/chat/start",
             response_model=ChatInitResponse,
             summary="Iniciar una nueva sesión de chat",
             tags=["Chat"])
-async def start_chat_session(api_key: str = Security(get_api_key)):
+async def start_chat_session(api_key: str = Security(get_api_key)): # Modified function signature
     """
     Inicializa una nueva sesión de chat con el asistente virtual.
     Devuelve un ID de sesión único que debe usarse para las interacciones posteriores.
@@ -161,7 +182,7 @@ async def start_chat_session(api_key: str = Security(get_api_key)):
             response_model=ChatMessageResponse,
             summary="Enviar un mensaje a una sesión de chat",
             tags=["Chat"])
-async def send_chat_message(request: ChatMessageRequest, api_key: str = Security(get_api_key)):
+async def send_chat_message(request: ChatMessageRequest, api_key: str = Security(get_api_key)): # Modified function signature
     """
     Envía un mensaje del usuario a una sesión de chat existente, identificada por `session_id`.
     Devuelve la respuesta del asistente.
@@ -209,4 +230,4 @@ async def send_chat_message(request: ChatMessageRequest, api_key: str = Security
 # curl -X POST http://127.0.0.1:8000/chat/send -H "Content-Type: application/json" -d '''{
 #   "session_id": "TU_SESSION_ID_AQUI",
 #   "pregunta": "Necesito ayuda con un alumno con TDAH en primaria"
-# }''' -H "X-API-Key: tu_clave_api_aqui"
+# }''' -H "X-API-Key: 3^v22Pd1DHk1cU" # Example using a key from api_keys.json
