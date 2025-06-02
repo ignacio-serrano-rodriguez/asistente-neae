@@ -142,12 +142,12 @@ if __name__ == "__main__":
                 try:
                     pregunta = input("👤 Tú: ")
                     if pregunta.lower() == 'salir':
-                        print("🤖 Asistente NEAE: ¡Hasta pronto! Espero haberte sido de ayuda.") 
-                        break 
+                        print("🤖 Asistente NEAE: ¡Hasta pronto! Espero haberte sido de ayuda.")
+                        break
                     
                     if pregunta.strip(): 
-                        respuesta = preguntar_al_asistente(chat_sesion, pregunta)
-                        print(f"🤖 Asistente NEAE: {respuesta}") # Added space here
+                        respuesta_asistente = preguntar_al_asistente(chat_sesion, pregunta)
+                        print(f"🤖 Asistente NEAE: {respuesta_asistente}")
                     # else: # If input is empty or just whitespace, loop again for new input. No action needed.
                     #    pass
                 except KeyboardInterrupt:
