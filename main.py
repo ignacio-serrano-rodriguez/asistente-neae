@@ -2,7 +2,8 @@ import google.generativeai as genai
 import os
 from dotenv import load_dotenv
 from google.ai.generativelanguage import GoogleSearchRetrieval
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Security
+from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel
 import uuid
 
@@ -92,6 +93,26 @@ except Exception as e:
     raise RuntimeError("No se pudo inicializar el modelo Gemini.") from e
 # --- End of copied/adapted code ---
 
+# Define your static API keys
+API_KEYS = [
+    "clave_secreta_1_aqui",  # Replace with your actual strong keys
+    "clave_secreta_2_aqui",
+    "clave_secreta_3_aqui",
+    "clave_secreta_4_aqui",
+    "clave_secreta_5_aqui",
+    "clave_secreta_6_aqui",
+]
+
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=True)
+
+async def get_api_key(api_key: str = Security(api_key_header)):
+    if api_key in API_KEYS:
+        return api_key
+    else:
+        raise HTTPException(
+            status_code=403, detail="Could not validate credentials or API key is invalid."
+        )
+
 app = FastAPI(
     title="Asistente NEAE API",
     description="API para interactuar con el Asistente Virtual de Apoyo Docente NEAE para Andalucía.",
@@ -118,10 +139,11 @@ class ChatMessageResponse(BaseModel):
             response_model=ChatInitResponse,
             summary="Iniciar una nueva sesión de chat",
             tags=["Chat"])
-async def start_chat_session():
+async def start_chat_session(api_key: str = Security(get_api_key)):
     """
     Inicializa una nueva sesión de chat con el asistente virtual.
     Devuelve un ID de sesión único que debe usarse para las interacciones posteriores.
+    Requires X-API-Key header for authentication.
     """
     try:
         chat = modelo_gemini.start_chat(history=[]) # Historial vacío para empezar
@@ -139,10 +161,11 @@ async def start_chat_session():
             response_model=ChatMessageResponse,
             summary="Enviar un mensaje a una sesión de chat",
             tags=["Chat"])
-async def send_chat_message(request: ChatMessageRequest):
+async def send_chat_message(request: ChatMessageRequest, api_key: str = Security(get_api_key)):
     """
     Envía un mensaje del usuario a una sesión de chat existente, identificada por `session_id`.
     Devuelve la respuesta del asistente.
+    Requires X-API-Key header for authentication.
     """
     chat_session = chat_sessions.get(request.session_id)
     if not chat_session:
@@ -179,11 +202,11 @@ async def send_chat_message(request: ChatMessageRequest):
 # Ejemplos de uso con curl:
 #
 # Iniciar una nueva sesión de chat:
-# curl -X POST http://127.0.0.1:8000/chat/start -H "Content-Type: application/json" -d "{}"
+# curl -X POST http://127.0.0.1:8000/chat/start -H "Content-Type: application/json" -d "{}" -H "X-API-Key: tu_clave_api_aqui"
 # (Copia el "session_id" de la respuesta)
 #
 # Enviar un mensaje a la sesión:
 # curl -X POST http://127.0.0.1:8000/chat/send -H "Content-Type: application/json" -d '''{
 #   "session_id": "TU_SESSION_ID_AQUI",
 #   "pregunta": "Necesito ayuda con un alumno con TDAH en primaria"
-# }'''
+# }''' -H "X-API-Key: tu_clave_api_aqui"
