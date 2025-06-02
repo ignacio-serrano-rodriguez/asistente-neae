@@ -164,7 +164,7 @@ Normativa autonómica (Andalucía):
 
 🗂️ [NOMBRE NORMA ANDALUZA (AÑO) CORRECTA Y VIGENTE], sobre [tema, ej: por la que se desarrolla el currículo correspondiente al título de Técnico Superior en Desarrollo de Aplicaciones Web en Andalucía]. (Vigente):
 ➕ Art. X: [Breve descripción de la relevancia].
-📄 Enlace BOJA/Web Institucional: [URL directa y verificada al documento específico, comenzando con https://. Para BOJA, busca el enlace directo al BOJA específico (número y página) de la norma correcta y vigente. Si tras una búsqueda diligente no se encuentra el enlace directo al BOJA específico, indica "📄 Enlace directo al BOJA específico no encontrado online tras búsqueda." NO uses un enlace genérico al portal del BOJA ni instruyas al usuario a buscar.]
+📄 Enlace BOJA/Web Institucional: [URL directa y verificada al documento específico, comenzando con https://. Para BOJA, busca la **página de sumario o visualización del BOJA específico** (ej. `https://www.juntadeandalucia.es/boja/[AÑO]/[NUMERO_BOLETIN]/[INDICE_O_PAGINA_DISPOSICION]`) que contenga la norma correcta y vigente. **Prioriza este tipo de enlace sobre los enlaces directos a ficheros PDF**, de acuerdo con la política de "Prioridad a Enlaces Estables". Si tras una búsqueda diligente no se encuentra un enlace funcional a la página de sumario o al PDF específico, indica "📄 Enlace directo al BOJA específico no encontrado online tras búsqueda." NO uses un enlace genérico al portal del BOJA ni instruyas al usuario a buscar.]
 (Si hay más normativa autonómica relevante, añadirla siguiendo el mismo formato)
 ```
 
