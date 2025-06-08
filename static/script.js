@@ -1,15 +1,8 @@
 class NEAEChatInterface {
     constructor() {
         this.apiBaseUrl = CONFIG.API_BASE_URL;
-        this.apiKey = CONFIG.API_KEY;
         this.sessionId = null;
         this.isLoading = false;
-        
-        // Validate API key
-        if (this.apiKey === 'YOUR_API_KEY_HERE') {
-            this.showError('⚠️ Configuración requerida: Abre el archivo static/config.js y reemplaza YOUR_API_KEY_HERE con tu clave API real del archivo api_keys.json');
-            return;
-        }
         
         this.initializeElements();
         this.attachEventListeners();
@@ -44,8 +37,7 @@ class NEAEChatInterface {
             const response = await fetch(`${this.apiBaseUrl}/chat/start`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-API-Key': this.apiKey
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({})
             });
@@ -90,8 +82,7 @@ class NEAEChatInterface {
             const response = await fetch(`${this.apiBaseUrl}/chat/send`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-API-Key': this.apiKey
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     session_id: this.sessionId,

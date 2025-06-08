@@ -1,4 +1,3 @@
 .env
 credenciales_google.json
 __pycache__
-api_keys.json

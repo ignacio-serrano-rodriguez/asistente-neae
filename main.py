@@ -1,18 +1,14 @@
-import google.generativeai as genai
-import os
-import json
-import google.generativeai as genai
 import os
 import json
 from dotenv import load_dotenv
 from google.ai.generativelanguage import GoogleSearchRetrieval
-from fastapi import FastAPI, HTTPException, Security
-from fastapi.security.api_key import APIKeyHeader
+from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uuid
+import google.generativeai as genai
 
 # Cargar variables de entorno
 load_dotenv(override=True)
@@ -100,46 +96,6 @@ except Exception as e:
     raise RuntimeError("No se pudo inicializar el modelo Gemini.") from e
 # --- End of copied/adapted code ---
 
-# Load API keys from api_keys.json
-def load_api_keys_from_file(file_path: str) -> list[str]:
-    """Loads API keys from a JSON file."""
-    try:
-        with open(file_path, 'r') as f:
-            keys_dict = json.load(f)
-            # Assuming the JSON structure is {"key-1": "value1", "key-2": "value2", ...}
-            # We want a list of the values.
-            return list(keys_dict.values())
-    except FileNotFoundError:
-        print(f"Error: API keys file not found at {file_path}")
-        # Optionally, you could allow the application to start with no API keys
-        # if you have other forms of auth or want to disable it for local dev.
-        # For now, we'll make it a critical error.
-        raise RuntimeError(f"API keys file not found at {file_path}. Please create it and ensure it's in the correct location relative to main.py.")
-    except json.JSONDecodeError:
-        print(f"Error: Could not decode JSON from API keys file at {file_path}")
-        raise RuntimeError(f"Invalid JSON format in API keys file at {file_path}.")
-    except Exception as e:
-        print(f"An unexpected error occurred while loading API keys: {e}")
-        raise RuntimeError(f"Could not load API keys: {e}")
-
-# Construct the absolute path to api_keys.json, assuming it's in the same directory as main.py
-API_KEYS_FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "api_keys.json")
-API_KEYS = load_api_keys_from_file(API_KEYS_FILE_PATH)
-
-if not API_KEYS:
-    # This case might be hit if the file is empty or contains no valid key entries.
-    raise ValueError("No API keys found in api_keys.json or the file is empty/invalid.")
-
-api_key_header = APIKeyHeader(name="X-API-Key", auto_error=True)
-
-async def get_api_key(api_key: str = Security(api_key_header)):
-    if api_key in API_KEYS:
-        return api_key # Modified return statement
-    else:
-        raise HTTPException( # Modified exception
-            status_code=403, detail="Could not validate credentials or API key is invalid."
-        )
-
 app = FastAPI(
     title="Asistente NEAE API",
     description="API para interactuar con el Asistente Virtual de Apoyo Docente NEAE para Andalucía.",
@@ -176,22 +132,21 @@ class ChatMessageRequest(BaseModel):
     pregunta: str
 
 class ChatMessageResponse(BaseModel):
-    session_id: str # Added field
-    respuesta: str # Added field
-    error: str | None = None # Added field
+    session_id: str 
+    respuesta: str 
+    error: str | None = None
 
 @app.post("/chat/start",
             response_model=ChatInitResponse,
             summary="Iniciar una nueva sesión de chat",
             tags=["Chat"])
-async def start_chat_session(api_key: str = Security(get_api_key)): # Modified function signature
+async def start_chat_session(): # Modified function signature
     """
     Inicializa una nueva sesión de chat con el asistente virtual.
     Devuelve un ID de sesión único que debe usarse para las interacciones posteriores.
-    Requires X-API-Key header for authentication.
     """
     try:
-        chat = modelo_gemini.start_chat(history=[]) # Historial vacío para empezar
+        chat = modelo_gemini.start_chat(history=[]) 
         session_id = str(uuid.uuid4())
         chat_sessions[session_id] = chat
         return ChatInitResponse(
@@ -199,35 +154,31 @@ async def start_chat_session(api_key: str = Security(get_api_key)): # Modified f
             message="Hola, soy tu Asistente NEAE de Apoyo Docente para Andalucía. Sesión iniciada."
         )
     except Exception as e:
-        print(f"Error crítico al iniciar el chat: {e}") # Log para el servidor
+        print(f"Error crítico al iniciar el chat: {e}") 
         raise HTTPException(status_code=500, detail=f"Error interno del servidor al iniciar el chat: {str(e)}")
 
 @app.post("/chat/send",
             response_model=ChatMessageResponse,
             summary="Enviar un mensaje a una sesión de chat",
             tags=["Chat"])
-async def send_chat_message(request: ChatMessageRequest, api_key: str = Security(get_api_key)): # Modified function signature
+async def send_chat_message(request: ChatMessageRequest): # Modified function signature
     """
     Envía un mensaje del usuario a una sesión de chat existente, identificada por `session_id`.
     Devuelve la respuesta del asistente.
-    Requires X-API-Key header for authentication.
     """
     chat_session = chat_sessions.get(request.session_id)
     if not chat_session:
-        raise HTTPException(status_code=404, detail=f"Sesión de chat con ID '{request.session_id}' no encontrada.")
+        raise HTTPException(status_code=404, detail=f"Sesión de chat con ID \'{request.session_id}\' no encontrada.")
 
     if not request.pregunta or not request.pregunta.strip():
         raise HTTPException(status_code=400, detail="La pregunta no puede estar vacía.")
 
     try:
         print(f"🤖 Asistente NEAE (API) está pensando para sesión {request.session_id}...")
-        response = chat_session.send_message(request.pregunta)
-        # El descargo de responsabilidad y la leyenda de iconos deben ser manejados por el LLM
-        # según las instrucciones en prompt.txt
-        return ChatMessageResponse(session_id=request.session_id, respuesta=response.text)
+        # Simulate sending message to Gemini model and getting a response
+        # Replace this with actual call to your Gemini model
+        response_text = chat_session.send_message(request.pregunta).text
+        return ChatMessageResponse(session_id=request.session_id, respuesta=response_text)
     except Exception as e:
-        # Log the full error for debugging on the server
-        print(f"Error al comunicarse con el modelo para sesión {request.session_id}: {e}")
-        # Consider more specific error handling based on genai exceptions if available
-        # For now, return a generic error to the client
-        raise HTTPException(status_code=500, detail=f"Error al comunicarse con el modelo: {str(e)}")
+        print(f"Error al enviar mensaje a Gemini: {e}")
+        raise HTTPException(status_code=500, detail=f"Error interno del servidor al procesar el mensaje: {str(e)}")
