@@ -1,10 +1,16 @@
 import google.generativeai as genai
 import os
 import json
+import google.generativeai as genai
+import os
+import json
 from dotenv import load_dotenv
 from google.ai.generativelanguage import GoogleSearchRetrieval
 from fastapi import FastAPI, HTTPException, Security
 from fastapi.security.api_key import APIKeyHeader
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uuid
 
@@ -140,6 +146,24 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with your domain
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mount static files directory
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Serve the web interface
+@app.get("/", response_class=FileResponse)
+async def get_web_interface():
+    """Serve the web chat interface."""
+    return FileResponse("static/index.html")
+
 # In-memory store for chat sessions (for simplicity; consider a database for production)
 chat_sessions = {}
 
@@ -207,27 +231,3 @@ async def send_chat_message(request: ChatMessageRequest, api_key: str = Security
         # Consider more specific error handling based on genai exceptions if available
         # For now, return a generic error to the client
         raise HTTPException(status_code=500, detail=f"Error al comunicarse con el modelo: {str(e)}")
-
-# Instrucciones para ejecutar la aplicación (se pueden añadir como comentarios al final del archivo o en un README)
-# Para ejecutar esta aplicación FastAPI:
-# 1. Asegúrate de tener este archivo (main.py) en el directorio raíz de tu proyecto.
-# 2. Verifica que los archivos `.env`, `prompt.txt` y `credenciales.json` (referenciado en .env) estén correctamente configurados y en las ubicaciones esperadas.
-# 3. Instala las dependencias necesarias:
-#    pip install fastapi uvicorn[standard] google-generativeai python-dotenv
-# 4. Ejecuta el servidor Uvicorn desde la terminal, en el directorio del proyecto:
-#    uvicorn main:app --reload
-#
-# Una vez en ejecución, la API estará disponible (por defecto) en http://127.0.0.1:8000.
-# Puedes ver la documentación interactiva de la API en http://127.0.0.1:8000/docs.
-#
-# Ejemplos de uso con curl:
-#
-# Iniciar una nueva sesión de chat:
-# curl -X POST http://127.0.0.1:8000/chat/start -H "Content-Type: application/json" -d "{}" -H "X-API-Key: tu_clave_api_aqui"
-# (Copia el "session_id" de la respuesta)
-#
-# Enviar un mensaje a la sesión:
-# curl -X POST http://127.0.0.1:8000/chat/send -H "Content-Type: application/json" -d '''{
-#   "session_id": "TU_SESSION_ID_AQUI",
-#   "pregunta": "Necesito ayuda con un alumno con TDAH en primaria"
-# }''' -H "X-API-Key: 3^v22Pd1DHk1cU" # Example using a key from api_keys.json
