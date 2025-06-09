@@ -3,39 +3,40 @@
     position: relative;
     display: flex;
     align-items: center;
+    margin-bottom: 1em; /* Ensure spacing is consistent if input's margin-bottom is removed */
 }
 
 .key-container input {
     flex-grow: 1;
-    padding-right: 40px; /* Add padding to make space for the button */
+    /* padding-right is inherited if input[type="password"] is styled globally,
+       but ensure it's enough for the button. The button is absolute positioned. */
+    padding-right: 45px; /* Space for the toggle button */
+    margin-bottom: 0; /* Handled by .key-container or specific form structure */
 }
 
-.key-container button {
+.key-container button { /* Styles for the visibility toggle button */
     position: absolute;
-    right: 1px; /* Adjust to align with input border */
-    top: 1px; /* Adjust to align with input border */
-    bottom: 1px; /* Adjust to align with input border */
-    width: 38px; /* Fixed width for the button */
+    right: 5px; 
+    top: 50%;
+    transform: translateY(-50%);
+    width: 34px; 
+    height: 34px;
     padding: 0;
-    font-size: 1em; /* Adjusted for better icon scaling */
-    background-color: #6c757d; /* A neutral color */
+    background-color: transparent;
     border: none;
-    color: white;
+    color: #6c757d; /* Icon color */
     cursor: pointer;
-    border-radius: 0 3px 3px 0; /* Match input's right border radius */
-    height: auto; /* Let height be determined by top/bottom/input height */
-    line-height: normal; /* Reset line-height */
-    display: flex; /* For centering icon */
-    align-items: center; /* For centering icon */
-    justify-content: center; /* For centering icon */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%; /* Make it circular */
 }
 
 .key-container button:hover {
-    background-color: #5a6268;
+    background-color: #e9ecef; /* Light background on hover for feedback */
 }
 
 .key-container button svg {
-    width: 1em; /* Adjust size as needed */
-    height: 1em; /* Adjust size as needed */
-    vertical-align: middle;
+    width: 20px; /* Adjust icon size if needed */
+    height: 20px; /* Adjust icon size if needed */
 }
