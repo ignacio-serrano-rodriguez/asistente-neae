@@ -34,6 +34,44 @@ body {
     padding: 20px;
     text-align: center;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens if necessary */
+}
+
+.header-main-content {
+    flex-grow: 1; /* Allows title/subtitle to take available space */
+    /* If your .chat-header had text-align: center, you might want to reset it for this part */
+    /* text-align: left; */
+}
+
+.header-user-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Space between usage info and logout button */
+    margin-left: 15px; /* Add some space from the main content if they wrap */
+}
+
+.usage-info {
+    font-size: 0.8em;
+    color: #eee; /* Or your desired color - assuming header has dark background */
+}
+
+.logout-button {
+    text-decoration: none;
+    color: white;
+    background-color: #6c757d; /* A neutral or secondary button color */
+    padding: 8px 15px;
+    border-radius: 5px;
+    font-size: 0.9em;
+    transition: background-color 0.3s ease;
+    white-space: nowrap; /* Prevent button text from wrapping */
+}
+
+.logout-button:hover {
+    background-color: #5a6268; /* Darker shade on hover */
 }
 
 .chat-header h1 {

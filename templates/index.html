@@ -9,14 +9,18 @@
 <body>
     <div class="chat-container">
         <div class="chat-header">
-            <h1>🧩 Asistente NEAE Andalucía</h1>
-            <p>Apoyo especializado para docentes y familias</p>
-            <!-- Optional: Display user key and usage -->
-            {% if user_key %}
-            <div style="font-size: 0.8em; color: #eee;">
-                Usage: {{ usage_count }} / {{ max_uses }}
+            <div class="header-main-content">
+                <h1>🧩 Asistente NEAE Andalucía</h1>
+                <p>Apoyo especializado para docentes y familias</p>
             </div>
-            {% endif %}
+            <div class="header-user-controls">
+                {% if user_key %}
+                <div class="usage-info">
+                    Usage: {{ usage_count }} / {{ max_uses }}
+                </div>
+                {% endif %}
+                <a href="/logout" class="logout-button">Logout</a>
+            </div>
         </div>
         
         <div id="connectionStatus" class="connection-status">
