@@ -1,0 +1,40 @@
+.key-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.key-container input {
+    flex-grow: 1;
+    padding-right: 40px; /* Add padding to make space for the button */
+}
+
+.key-container button {
+    position: absolute;
+    right: 1px; /* Adjust to align with input border */
+    top: 1px; /* Adjust to align with input border */
+    bottom: 1px; /* Adjust to align with input border */
+    width: 38px; /* Fixed width for the button */
+    padding: 0;
+    font-size: 1em; /* Adjusted for better icon scaling */
+    background-color: #6c757d; /* A neutral color */
+    border: none;
+    color: white;
+    cursor: pointer;
+    border-radius: 0 3px 3px 0; /* Match input's right border radius */
+    height: auto; /* Let height be determined by top/bottom/input height */
+    line-height: normal; /* Reset line-height */
+    display: flex; /* For centering icon */
+    align-items: center; /* For centering icon */
+    justify-content: center; /* For centering icon */
+}
+
+.key-container button:hover {
+    background-color: #5a6268;
+}
+
+.key-container button svg {
+    width: 1em; /* Adjust size as needed */
+    height: 1em; /* Adjust size as needed */
+    vertical-align: middle;
+}

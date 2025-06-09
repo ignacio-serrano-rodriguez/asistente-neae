@@ -2,99 +2,86 @@ import os
 import json
 from dotenv import load_dotenv
 from google.ai.generativelanguage import GoogleSearchRetrieval
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Form, Depends
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uuid
 import google.generativeai as genai
+import uvicorn
 
 # Cargar variables de entorno
 load_dotenv(override=True)
 
-# --- Copied and adapted from asistente-virtual.py ---
-# Configurar credenciales
+# --- Configuración del Modelo Gemini ---
+# Adaptado de asistente-virtual.py y la lógica previa de main.py
 credentials_path_from_env_file = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_PATH")
 effective_credentials_path = None
-# Use abspath for __file__ robustness, assuming main.py is in the project root
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 if credentials_path_from_env_file:
     if os.path.isabs(credentials_path_from_env_file):
         potential_path = credentials_path_from_env_file
     else:
-        # If relative, resolve it with respect to the script's directory
         potential_path = os.path.join(script_dir, credentials_path_from_env_file)
-    
     potential_path = os.path.normpath(potential_path)
-
     if os.path.exists(potential_path):
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = potential_path
         effective_credentials_path = potential_path
         print(f"Usando credenciales de servicio desde el archivo: {effective_credentials_path}")
     else:
-        raise FileNotFoundError(
-            f"El archivo de credenciales JSON especificado en GOOGLE_APPLICATION_CREDENTIALS_PATH ('{credentials_path_from_env_file}') no se encontró. "
-            f"Se intentó resolver como ruta absoluta: '{potential_path}'."
-        )
+        print(f"Advertencia: El archivo de credenciales JSON especificado en GOOGLE_APPLICATION_CREDENTIALS_PATH ('{credentials_path_from_env_file}') no se encontró en '{potential_path}'.")
 elif os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
     effective_credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
     if not os.path.exists(effective_credentials_path):
-        print(f"Advertencia: El archivo de credenciales JSON especificado por la variable de entorno GOOGLE_APPLICATION_CREDENTIALS ('{effective_credentials_path}') no se encontró, pero se intentará usar si las librerías de Google lo permiten.")
+        print(f"Advertencia: El archivo de credenciales JSON especificado por GOOGLE_APPLICATION_CREDENTIALS ('{effective_credentials_path}') no se encontró.")
     else:
-        print(f"Usando credenciales de servicio desde la variable de entorno GOOGLE_APPLICATION_CREDENTIALS: {effective_credentials_path}")
-else:
-    raise ValueError(
-        "No se encontraron credenciales de Google. "
-        "Define GOOGLE_APPLICATION_CREDENTIALS_PATH en tu archivo .env apuntando a tu archivo de credenciales JSON, "
-        "o configura la variable de entorno GOOGLE_APPLICATION_CREDENTIALS directamente en tu sistema."
-    )
+        print(f"Usando credenciales de servicio desde GOOGLE_APPLICATION_CREDENTIALS: {effective_credentials_path}")
 
 try:
-    genai.configure() # No se pasa api_key, usará ADC
+    api_key_from_env = os.getenv("GOOGLE_API_KEY")
+    if api_key_from_env:
+        genai.configure(api_key=api_key_from_env)
+        print("Usando GOOGLE_API_KEY para configurar Gemini.")
+    elif effective_credentials_path and os.path.exists(effective_credentials_path):
+        genai.configure() 
+        print("Intentando configurar Gemini usando Application Default Credentials (ADC) a través de GOOGLE_APPLICATION_CREDENTIALS.")
+    else:
+        # Fallback a intentar configurar sin nada explícito, puede que funcione si ADC está configurado de otra manera
+        genai.configure()
+        print("Intentando configurar Gemini (puede usar ADC si está disponible de otra forma, o fallará si no hay credenciales).")
+
 except Exception as e:
-    print(f"Error al configurar genai con Application Default Credentials: {e}")
-    raise RuntimeError(
-        "No se pudo configurar la API de Gemini con las credenciales proporcionadas. "
-        "Verifica que el archivo de credenciales es válido y que la cuenta de servicio tiene los permisos necesarios (ej. 'Vertex AI User')."
-    ) from e
+    print(f"Error inicial al configurar genai: {e}. El modelo no estará disponible.")
+    # No levantar RuntimeError aquí para permitir que la app inicie y muestre errores en endpoints
+    # modelo_gemini se manejará como None si la configuración falla.
 
-MODEL_NAME = "gemini-1.5-pro-latest"
+MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-pro-latest") # Usar variable de entorno o default
+SYSTEM_PROMPT_ASISTENTE_NEAE = "Eres un asistente virtual de apoyo docente especializado en Necesidades Específicas de Apoyo Educativo (NEAE) para Andalucía." # Default simple
+RUTA_PROMPT_TXT = os.path.join(script_dir, "prompt.txt")
+if os.path.exists(RUTA_PROMPT_TXT):
+    with open(RUTA_PROMPT_TXT, 'r', encoding='utf-8') as f:
+        SYSTEM_PROMPT_ASISTENTE_NEAE = f.read()
+        print(f"Prompt del sistema cargado desde {RUTA_PROMPT_TXT}")
 
-def cargar_prompt_desde_archivo(ruta_archivo):
-    """Carga el contenido de un archivo de texto."""
-    try:
-        with open(ruta_archivo, 'r', encoding='utf-8') as f:
-            return f.read()
-    except FileNotFoundError:
-        print(f"Error: No se encontró el archivo de prompt en {ruta_archivo}")
-        return None
-    except Exception as e:
-        print(f"Error al leer el archivo de prompt: {e}")
-        return None
-
-# Asegúrate de que prompt.txt esté en el mismo directorio que main.py o proporciona la ruta completa.
-RUTA_PROMPT_TXT = os.path.join(os.path.dirname(__file__), "prompt.txt")
-SYSTEM_PROMPT_ASISTENTE_NEAE = cargar_prompt_desde_archivo(RUTA_PROMPT_TXT)
-
-if not SYSTEM_PROMPT_ASISTENTE_NEAE:
-    raise ValueError("No se pudo cargar el prompt del sistema desde prompt.txt. Verifica el archivo y la ruta.")
-
-# Configurar la herramienta de búsqueda de Google
-google_search_tool = GoogleSearchRetrieval()
-
-# Inicializar el modelo generativo de Gemini
+modelo_gemini = None
 try:
+    # Directly attempt to initialize the model.
+    # genai.configure() should have been called in the preceding block.
+    # If configuration failed, GenerativeModel() will likely raise an error, caught below.
     modelo_gemini = genai.GenerativeModel(
         MODEL_NAME,
         system_instruction=SYSTEM_PROMPT_ASISTENTE_NEAE,
-        tools=[google_search_tool]
+        # tools=[GoogleSearchRetrieval()] # Descomentar si se necesita Google Search
+        # safety_settings=SAFETY_SETTINGS # Descomentar y definir si se necesitan ajustes de seguridad
     )
+    print(f"Modelo Gemini '{MODEL_NAME}' inicializado correctamente.")
 except Exception as e:
-    print(f"Error al inicializar el modelo Gemini: {e}")
-    raise RuntimeError("No se pudo inicializar el modelo Gemini.") from e
-# --- End of copied/adapted code ---
+    print(f"Error al inicializar el modelo Gemini '{MODEL_NAME}': {e}")
+    # modelo_gemini will remain None, and endpoints will report 503 if they rely on it.
+# --- Fin Configuración del Modelo Gemini ---
 
 app = FastAPI(
     title="Asistente NEAE API",
@@ -102,26 +89,65 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with your domain
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Mount static files directory
 app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 
-# Serve the web interface
-@app.get("/", response_class=FileResponse)
-async def get_web_interface():
-    """Serve the web chat interface."""
-    return FileResponse("static/index.html")
+fake_keys_db = {
+    "supersecretkey": {"count": 0, "max_uses": 100, "user_id": "user1"},
+    "anothersecretkey": {"count": 0, "max_uses": 50, "user_id": "user2"}
+}
 
-# In-memory store for chat sessions (for simplicity; consider a database for production)
-chat_sessions = {}
+chat_sessions = {} # Almacén en memoria para sesiones de chat
+
+def get_current_user_key(request: Request):
+    return request.cookies.get("auth_key")
+
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request, auth_key: str = Depends(get_current_user_key)):
+    if auth_key and auth_key in fake_keys_db:
+        return RedirectResponse(url="/chat", status_code=302)
+    return RedirectResponse(url="/login", status_code=302)
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.post("/login")
+async def login_submit(request: Request, key: str = Form(...)):
+    if key in fake_keys_db:
+        response = RedirectResponse(url="/chat", status_code=302)
+        response.set_cookie(key="auth_key", value=key)
+        return response
+    return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid key"})
+
+@app.get("/chat", response_class=HTMLResponse)
+async def chat_interface(request: Request, auth_key: str = Depends(get_current_user_key)):
+    if not auth_key or auth_key not in fake_keys_db:
+        # Aunque Depends debería manejar esto, una redirección explícita es más robusta
+        # si get_current_user_key puede devolver None sin lanzar error.
+        return RedirectResponse(url="/login", status_code=302)
+    
+    key_data = fake_keys_db[auth_key]
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "user_key": auth_key,
+        "usage_count": key_data["count"],
+        "max_uses": key_data["max_uses"]
+    })
+
+@app.get("/logout")
+async def logout(request: Request):
+    response = RedirectResponse(url="/login", status_code=302)
+    response.delete_cookie("auth_key")
+    return response
 
 class ChatInitResponse(BaseModel):
     session_id: str
@@ -132,53 +158,67 @@ class ChatMessageRequest(BaseModel):
     pregunta: str
 
 class ChatMessageResponse(BaseModel):
-    session_id: str 
-    respuesta: str 
+    session_id: str
+    respuesta: str
     error: str | None = None
 
-@app.post("/chat/start",
-            response_model=ChatInitResponse,
-            summary="Iniciar una nueva sesión de chat",
-            tags=["Chat"])
-async def start_chat_session(): # Modified function signature
-    """
-    Inicializa una nueva sesión de chat con el asistente virtual.
-    Devuelve un ID de sesión único que debe usarse para las interacciones posteriores.
-    """
+@app.post("/chat/start", response_model=ChatInitResponse, tags=["Chat"])
+async def start_chat_session(auth_key: str = Depends(get_current_user_key)):
+    if not auth_key or auth_key not in fake_keys_db:
+        raise HTTPException(status_code=401, detail="Not authenticated or invalid key")
+    if not modelo_gemini:
+        raise HTTPException(status_code=503, detail="Chat service not available: Model not loaded.")
     try:
-        chat = modelo_gemini.start_chat(history=[]) 
+        chat = modelo_gemini.start_chat(history=[])
         session_id = str(uuid.uuid4())
         chat_sessions[session_id] = chat
         return ChatInitResponse(
             session_id=session_id,
-            message="Hola, soy tu Asistente NEAE de Apoyo Docente para Andalucía. Sesión iniciada."
+            message="Hola, soy tu Asistente NEAE. Sesión iniciada."
         )
     except Exception as e:
-        print(f"Error crítico al iniciar el chat: {e}") 
-        raise HTTPException(status_code=500, detail=f"Error interno del servidor al iniciar el chat: {str(e)}")
+        print(f"Error starting chat session: {e}")
+        raise HTTPException(status_code=500, detail=f"Error interno al iniciar el chat: {str(e)}")
 
-@app.post("/chat/send",
-            response_model=ChatMessageResponse,
-            summary="Enviar un mensaje a una sesión de chat",
-            tags=["Chat"])
-async def send_chat_message(request: ChatMessageRequest): # Modified function signature
-    """
-    Envía un mensaje del usuario a una sesión de chat existente, identificada por `session_id`.
-    Devuelve la respuesta del asistente.
-    """
+@app.post("/chat/send", response_model=ChatMessageResponse, tags=["Chat"])
+async def send_chat_message(request: ChatMessageRequest, auth_key: str = Depends(get_current_user_key)):
+    if not auth_key or auth_key not in fake_keys_db:
+        raise HTTPException(status_code=401, detail="Not authenticated or invalid key")
+
+    key_data = fake_keys_db[auth_key]
+    if key_data["count"] >= key_data["max_uses"]:
+        raise HTTPException(status_code=403, detail="Maximum API usage reached for this key.")
+
     chat_session = chat_sessions.get(request.session_id)
     if not chat_session:
-        raise HTTPException(status_code=404, detail=f"Sesión de chat con ID \'{request.session_id}\' no encontrada.")
-
+        raise HTTPException(status_code=404, detail=f"Sesión de chat '{request.session_id}' no encontrada.")
     if not request.pregunta or not request.pregunta.strip():
         raise HTTPException(status_code=400, detail="La pregunta no puede estar vacía.")
+    if not modelo_gemini: # Comprobar de nuevo si el modelo está disponible
+        raise HTTPException(status_code=503, detail="Chat service not available: Model not loaded.")
 
     try:
-        print(f"🤖 Asistente NEAE (API) está pensando para sesión {request.session_id}...")
-        # Simulate sending message to Gemini model and getting a response
-        # Replace this with actual call to your Gemini model
-        response_text = chat_session.send_message(request.pregunta).text
+        print(f"🤖 Asistente NEAE (API) pensando para sesión {request.session_id}...")
+        response = chat_session.send_message(request.pregunta)
+        # Asegurarse de que response.text exista. Algunos modelos/SDKs pueden tener response.parts[0].text
+        response_text = ""
+        if hasattr(response, 'text') and response.text:
+            response_text = response.text
+        elif hasattr(response, 'parts') and response.parts and hasattr(response.parts[0], 'text'):
+            response_text = response.parts[0].text
+        else:
+            # Fallback o log de estructura de respuesta inesperada
+            print(f"Respuesta inesperada del modelo: {response}")
+            raise HTTPException(status_code=500, detail="Formato de respuesta inesperado del modelo.")
+
+        key_data["count"] += 1
         return ChatMessageResponse(session_id=request.session_id, respuesta=response_text)
     except Exception as e:
-        print(f"Error al enviar mensaje a Gemini: {e}")
-        raise HTTPException(status_code=500, detail=f"Error interno del servidor al procesar el mensaje: {str(e)}")
+        print(f"Error sending message to Gemini: {e}")
+        # Podrías querer ser más específico con el error aquí
+        if isinstance(e, HTTPException): # Re-raise si ya es una HTTPException
+             raise
+        raise HTTPException(status_code=500, detail=f"Error interno al procesar el mensaje: {str(e)}")
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)

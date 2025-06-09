@@ -1,0 +1,54 @@
+<!-- filepath: c:\Users\ignac\Documents\GitHub\asistente-neae\static\index.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>Asistente NEAE - Chat Web</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>🧩 Asistente NEAE Andalucía</h1>
+            <p>Apoyo especializado para docentes y familias</p>
+            <!-- Optional: Display user key and usage -->
+            {% if user_key %}
+            <div style="font-size: 0.8em; color: #eee;">
+                Key: {{ user_key }} | Usage: {{ usage_count }} / {{ max_uses }}
+            </div>
+            {% endif %}
+        </div>
+        
+        <div id="connectionStatus" class="connection-status">
+            Conectando con el asistente...
+        </div>
+        
+        <div id="chatMessages" class="chat-messages">
+            <div class="message assistant">
+                <div class="message-content">
+                    <strong>¡Hola! 👋</strong><br><br>
+                    Soy tu Asistente NEAE de Apoyo Docente para Andalucía. Estoy aquí para ayudarte con:
+                    <br><br>
+                    • Adaptaciones curriculares y metodológicas<br>
+                    • Recursos especializados para NEAE<br>
+                    • Estrategias inclusivas para el aula<br>
+                    • Normativa educativa andaluza<br>
+                    <br>
+                    ¿En qué puedo ayudarte hoy?
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-input-container">
+            <input 
+                type="text" 
+                id="chatInput" 
+                class="chat-input" 
+                placeholder="Escribe tu consulta sobre NEAE aquí..."
+                maxlength="1000"
+            >
+            <button id="sendButton" class="send-button">Enviar</button>
+        </div>    </div>    <script src="/static/config.js"></script>
+    <script src="/static/script.js"></script>
+</body>
+</html>
