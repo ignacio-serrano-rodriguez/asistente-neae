@@ -1,7 +1,7 @@
 import os
 import json
 from dotenv import load_dotenv
-from google.ai.generativelanguage import GoogleSearchRetrieval
+# Removed: from google.ai.generativelanguage import GoogleSearchRetrieval
 from fastapi import FastAPI, HTTPException, Request, Form, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
@@ -72,8 +72,8 @@ try:
     # genai.configure() should have been called in the preceding block.
     # If configuration failed, GenerativeModel() will likely raise an error, caught below.
     modelo_gemini = genai.GenerativeModel(
-        MODEL_NAME,
-        system_instruction=SYSTEM_PROMPT_ASISTENTE_NEAE,
+        MODEL_NAME
+        # system_instruction=SYSTEM_PROMPT_ASISTENTE_NEAE, # Removed: system_instruction not supported by this version
         # tools=[GoogleSearchRetrieval()] # Descomentar si se necesita Google Search
         # safety_settings=SAFETY_SETTINGS # Descomentar y definir si se necesitan ajustes de seguridad
     )
@@ -97,8 +97,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
+templates = Jinja2Templates(directory="frontend/templates")
 
 fake_keys_db = {
     "supersecretkey": {"count": 0, "max_uses": 100, "user_id": "user1"},
@@ -169,7 +169,11 @@ async def start_chat_session(auth_key: str = Depends(get_current_user_key)):
     if not modelo_gemini:
         raise HTTPException(status_code=503, detail="Chat service not available: Model not loaded.")
     try:
-        chat = modelo_gemini.start_chat(history=[])
+        initial_history = [
+            {"role": "user", "parts": [SYSTEM_PROMPT_ASISTENTE_NEAE]},
+            {"role": "model", "parts": ["Entendido. Estoy listo para asistir como un especialista en NEAE para Andalucía."]}
+        ]
+        chat = modelo_gemini.start_chat(history=initial_history)
         session_id = str(uuid.uuid4())
         chat_sessions[session_id] = chat
         return ChatInitResponse(

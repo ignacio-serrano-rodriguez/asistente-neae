@@ -92,7 +92,7 @@ def inicializar_modelo():
 
         model = genai.GenerativeModel(
             MODEL_NAME,
-            system_instruction=SYSTEM_PROMPT_ASISTENTE_NEAE, # Usamos el prompt cargado de prompt.txt
+            # system_instruction=SYSTEM_PROMPT_ASISTENTE_NEAE, # Usamos el prompt cargado de prompt.txt
             tools=[google_search_tool] # Habilitar la búsqueda en Google
         )
         return model
@@ -103,7 +103,11 @@ def inicializar_modelo():
 def iniciar_chat(model):
     """Inicia una sesión de chat con el modelo."""
     if model:
-        chat = model.start_chat(history=[]) # Historial vacío para empezar
+        initial_history = [
+            {"role": "user", "parts": [SYSTEM_PROMPT_ASISTENTE_NEAE]},
+            {"role": "model", "parts": ["Entendido. Estoy listo para asistir como un especialista en NEAE para Andalucía."]}
+        ]
+        chat = model.start_chat(history=initial_history) # Historial vacío para empezar
         return chat
     return None
 
