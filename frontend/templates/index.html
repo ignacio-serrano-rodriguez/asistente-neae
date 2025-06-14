@@ -4,23 +4,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asistente NEAE</title> <!-- Simplified title, content will change -->
-    <link rel="stylesheet" href="/static/app.css">
+    <title>Asistente NEAE</title>
+    <link rel="stylesheet" href="/static/css/app.css">
     <!-- Favicon (optional but good practice) -->
     <!-- <link rel="icon" href="/static/favicon.ico" type="image/x-icon"> -->
 </head>
 <body>
     <div id="app">
         <!-- SPA content will be loaded here by router.js -->
-        <!-- Initial loading message or spinner -->
         <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 1.5em;">
             Cargando...
         </div>
     </div>
 
-    <!-- Main application script (includes chat logic) -->
-    <script src="/static/app.js"></script>
-    <!-- Router script - must be loaded after app.js if app.js defines NEAEChatInterface globally -->
-    <script src="/static/router.js"></script>
+    <!-- Configuration script -->
+    <script src="/static/js/config.js"></script>
+    <!-- Router script -->
+    <script src="/static/js/router.js"></script>
 </body>
 </html>
