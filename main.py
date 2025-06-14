@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 # Removed: from google.ai.generativelanguage import GoogleSearchRetrieval
 from fastapi import FastAPI, HTTPException, Request, Form, Depends
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -112,42 +112,54 @@ def get_current_user_key(request: Request):
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, auth_key: str = Depends(get_current_user_key)):
-    if auth_key and auth_key in fake_keys_db:
-        return RedirectResponse(url="/chat", status_code=302)
-    return RedirectResponse(url="/login", status_code=302)
+    # Always serve the SPA shell. Client-side JS will handle routing.
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+async def login_page_get(request: Request):
+    # This route is no longer needed for GET by the SPA.
+    # Redirect to root, SPA will handle showing login if not authenticated.
+    return RedirectResponse(url="/", status_code=302)
 
 @app.post("/login")
 async def login_submit(request: Request, key: str = Form(...)):
     if key in fake_keys_db:
-        response = RedirectResponse(url="/chat", status_code=302)
+        # For SPA, set cookie and return success. Client will re-route.
+        response = JSONResponse(content={"message": "Login successful. Cookie has been set."})
         response.set_cookie(key="auth_key", value=key)
         return response
-    return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid key"})
+    else:
+        # SPA expects a JSON error for failed login
+        raise HTTPException(status_code=401, detail="Invalid key")
 
 @app.get("/chat", response_class=HTMLResponse)
-async def chat_interface(request: Request, auth_key: str = Depends(get_current_user_key)):
-    if not auth_key or auth_key not in fake_keys_db:
-        # Aunque Depends debería manejar esto, una redirección explícita es más robusta
-        # si get_current_user_key puede devolver None sin lanzar error.
-        return RedirectResponse(url="/login", status_code=302)
-    
-    key_data = fake_keys_db[auth_key]
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "user_key": auth_key,
-        "usage_count": key_data["count"],
-        "max_uses": key_data["max_uses"]
-    })
+async def chat_interface_get(request: Request, auth_key: str = Depends(get_current_user_key)):
+    # Always serve the SPA shell. Client-side JS will handle routing.
+    # If auth_key is required here for some initial server-side check before serving SPA,
+    # it can be kept, but SPA itself will also check auth.
+    # For simplicity, let's assume SPA handles all auth checks post-load.
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/logout")
 async def logout(request: Request):
-    response = RedirectResponse(url="/login", status_code=302)
+    # Server clears the cookie.
+    # SPA will detect lack of cookie on next interaction or route change and show login.
+    response = JSONResponse(content={"message": "Logout successful. Cookie has been cleared."})
     response.delete_cookie("auth_key")
     return response
+
+# New endpoint for SPA to fetch user data
+@app.get("/api/user-data", tags=["User"])
+async def get_user_data(request: Request, auth_key: str = Depends(get_current_user_key)):
+    if not auth_key or auth_key not in fake_keys_db:
+        raise HTTPException(status_code=401, detail="Not authenticated or invalid key")
+    
+    key_data = fake_keys_db[auth_key]
+    return {
+        "user_key": auth_key, # Optional: if client needs to be aware of the key itself
+        "usage_count": key_data["count"],
+        "max_uses": key_data["max_uses"]
+    }
 
 class ChatInitResponse(BaseModel):
     session_id: str

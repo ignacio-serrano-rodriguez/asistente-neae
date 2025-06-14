@@ -31,9 +31,18 @@ class NEAEChatInterface {
         this.sessionId = null;
         this.isLoading = false;
         
+        // Elements are now initialized after chat.html is loaded into the SPA
+        // this.initializeElements(); 
+        // this.attachEventListeners();
+        // this.initializeSession(); // Session initialization will be triggered after elements are ready
+    }
+
+    // Call this method from router.js after chat.html is loaded
+    init() {
         this.initializeElements();
         this.attachEventListeners();
-        this.initializeSession();
+        this.initializeSession(); // Now safe to call
+        // this.updateUserData(); // User data is now fetched by router.js before init() is called
     }
 
     initializeElements() {
@@ -60,6 +69,7 @@ class NEAEChatInterface {
     }
 
     async initializeSession() {
+        this.updateConnectionStatus('connecting', 'Conectando con el asistente...');
         try {
             const response = await fetch(`${this.apiBaseUrl}/chat/start`, {
                 method: 'POST',
@@ -78,12 +88,39 @@ class NEAEChatInterface {
             
             this.updateConnectionStatus('connected', '✅ Conectado al asistente');
             this.chatInput.focus();
-              } catch (error) {
+            // User data is now fetched by router.js before this class is initialized
+            // So, no need to call this.updateUserData() here again unless it's for a refresh.
+            // this.updateUserData(); 
+        } catch (error) {
             console.error('Error initializing session:', error);
             this.updateConnectionStatus('error', '❌ Error de conexión. Verifica que el servidor esté ejecutándose.');
             this.showError(CONFIG.ERRORS.CONNECTION_FAILED + '\n• El servidor esté ejecutándose en http://127.0.0.1:8000\n• Tu API key sea válida\n• Tengas conexión a internet');
         }
     }
+
+    // New method to fetch and display user data - THIS IS NOW HANDLED BY ROUTER.JS
+    // async updateUserData() {
+    // try {
+    // const response = await fetch(`${this.apiBaseUrl}/api/user-data`);
+    // if (!response.ok) {
+    // if (response.status === 401) { // Unauthorized
+    // // This case should ideally be handled by the router before even loading chat page
+    // // but as a fallback:
+    // if (typeof navigateTo === 'function') navigateTo('/login');
+    // return;
+    // }
+    // throw new Error('Failed to fetch user data');
+    // }
+    // const userData = await response.json();
+    // const usageInfoEl = document.getElementById('usageInfo'); // Ensure this ID exists in chat.html
+    // if (usageInfoEl) {
+    // usageInfoEl.textContent = `Uso: ${userData.usage_count} / ${userData.max_uses}`;
+    // }
+    // } catch (error) {
+    // console.error('Error fetching user data:', error);
+    // // Optionally display an error to the user or handle silently
+    // }
+    // }
 
     updateConnectionStatus(type, message) {
         this.connectionStatus.className = `connection-status ${type}`;
@@ -215,7 +252,10 @@ class NEAEChatInterface {
     }
 }
 
-// Initialize the chat interface when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    new NEAEChatInterface();
-});
+// Initialize the chat interface when the page loads - THIS IS NOW HANDLED BY THE ROUTER
+// document.addEventListener('DOMContentLoaded', () => {
+// new NEAEChatInterface();
+// });
+
+// Make NEAEChatInterface globally available for the router if not using modules
+// window.NEAEChatInterface = NEAEChatInterface; // Not strictly necessary if router.js calls init on a new instance

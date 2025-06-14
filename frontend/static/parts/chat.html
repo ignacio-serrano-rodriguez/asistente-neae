@@ -1,0 +1,45 @@
+
+<div class="chat-container">
+    <div class="chat-header">
+        <div class="header-main-content">
+            <h1>🧩 Asistente NEAE Andalucía</h1>
+            <p>Apoyo especializado para docentes y familias</p>
+        </div>
+        <div class="header-user-controls">
+            <div class="usage-info" id="usageInfo">Uso: ... / ...</div>
+            <a href="#" id="logoutButton" class="logout-button">Logout</a>
+        </div>
+    </div>
+    
+    <div id="connectionStatus" class="connection-status">
+        Conectando con el asistente...
+    </div>
+    
+    <div id="chatMessages" class="chat-messages">
+        <!-- Initial welcome message can be added by JS if desired, or kept static if preferred -->
+        <div class="message assistant">
+            <div class="message-content">
+                <strong>¡Hola! 👋</strong><br><br>
+                Soy tu Asistente NEAE de Apoyo Docente para Andalucía. Estoy aquí para ayudarte con:
+                <br><br>
+                • Adaptaciones curriculares y metodológicas<br>
+                • Recursos especializados para NEAE<br>
+                • Estrategias inclusivas para el aula<br>
+                • Normativa educativa andaluza<br>
+                <br>
+                ¿En qué puedo ayudarte hoy?
+            </div>
+        </div>
+    </div>
+    
+    <div class="chat-input-container">
+        <input 
+            type="text" 
+            id="chatInput" 
+            class="chat-input" 
+            placeholder="Escribe tu consulta sobre NEAE aquí..."
+            maxlength="1000"
+        >
+        <button id="sendButton" class="send-button">Enviar</button>
+    </div>
+</div>
