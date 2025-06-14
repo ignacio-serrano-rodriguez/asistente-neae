@@ -271,23 +271,116 @@ body {
 }
 
 /* Responsive Design */
-@media (max-width: 600px) {
+@media (max-width: 768px) { /* Tablet */
+    .chat-container {
+        width: 95%;
+        height: 95vh;
+        max-height: 95vh;
+    }
+
+    .chat-header h1 {
+        font-size: 1.4em;
+    }
+
+    .chat-header p {
+        font-size: 0.85em;
+    }
+
+    .chat-input-container {
+        padding: 15px;
+    }
+
+    .chat-input, .send-button {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 600px) { /* Mobile */
     .chat-container {
         width: 100%;
-        height: 100vh;
+        height: 100vh; 
+        max-height: 100vh; 
         border-radius: 0;
+        box-shadow: none;
     }
-    
+
+    .chat-header {
+        padding: 15px;
+        flex-direction: column; 
+        align-items: flex-start; 
+    }
+
+    .header-main-content {
+        margin-bottom: 10px; 
+    }
+
+    .header-user-controls {
+        width: 100%; 
+        justify-content: space-between; 
+        margin-left: 0;
+    }
+
+    .chat-header h1 {
+        font-size: 1.2em; 
+    }
+
+    .chat-header p {
+        font-size: 0.75em;
+    }
+
     .message-content {
         max-width: 85%;
+        padding: 8px 12px;
+        font-size: 13px;
     }
-    
-    .chat-header h1 {
-        font-size: 1.3em;
+
+    .chat-input-container {
+        padding: 10px;
+        flex-direction: column; 
+        gap: 8px;
     }
-    
-    .chat-header p {
+
+    .chat-input {
+        font-size: 13px;
+        padding: 10px 14px;
+        width: 100%; /* Ensure full width when stacked */
+    }
+
+    .send-button {
+        font-size: 13px;
+        padding: 10px 15px;
+        width: 100%; 
+    }
+
+    .logout-button {
+        padding: 8px 12px; /* Increased padding for better tap target */
         font-size: 0.8em;
+    }
+
+    .usage-info {
+        font-size: 0.8em;
+    }
+}
+
+@media (max-width: 480px) { /* Smaller Mobile screens, especially for login */
+    .container { /* Used by login.html */
+        padding: 20px; 
+        /* margin: 15px; Remove explicit margin */
+        width: calc(100% - 30px); /* Set width to leave 15px on each side */
+        margin-left: auto; /* Center the container */
+        margin-right: auto; /* Center the container */
+        /* max-width from the base .container style (450px) will still apply */
+    }
+
+    .container h1 {
+        font-size: 1.8em; 
+    }
+
+    input[type="text"],
+    input[type="password"],
+    button[type="submit"] { /* Login form elements */
+        font-size: 14px; 
+        padding: 12px 15px; /* Slightly larger tap targets */
     }
 }
 

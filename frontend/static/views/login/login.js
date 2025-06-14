@@ -1,18 +1,24 @@
 // filepath: frontend/static/views/login/login.js
+document.addEventListener('DOMContentLoaded', () => {
+    initializeLoginPage();
+});
+
 function initializeLoginPage() {
     console.log("Login page loaded from login.js");
     const loginForm = document.getElementById('loginForm');
+    const keyInput = document.getElementById('key'); 
+
+    if (keyInput) { 
+        keyInput.focus();
+    }
+
     if (loginForm) {
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const keyInput = document.getElementById('key');
-            if (!keyInput) {
-                console.error("Key input not found");
-                return;
-            }
-            const key = keyInput.value;
-            const errorElement = document.getElementById('loginError');
-            if (errorElement) errorElement.style.display = 'none'; // Hide previous errors
+        loginForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const key = keyInput.value; // Use the keyInput defined earlier
+            const loginError = document.getElementById('loginError');
+
+            if (loginError) loginError.style.display = 'none'; // Hide previous errors
 
             try {
                 const response = await fetch('/login', {
@@ -22,30 +28,28 @@ function initializeLoginPage() {
                 });
                 if (response.ok) {
                     sessionStorage.setItem('isUserLoggedIn', 'true'); // Set login flag
-                    if (typeof navigateTo === 'function') {
-                        navigateTo('/'); 
-                    } else {
-                        console.error("navigateTo function is not defined. Cannot redirect.");
-                    }
+                    // Store the key and redirect to chat page
+                    localStorage.setItem('apiKey', key);
+                    // No need to pass the key in the URL anymore if it's in localStorage
+                    window.location.href = '/chat'; 
                 } else {
                     const errorData = await response.json();
-                    if (errorElement) {
-                        errorElement.textContent = errorData.detail || 'Login failed';
-                        errorElement.style.display = 'block';
+                    if (loginError) {
+                        loginError.textContent = errorData.detail || 'Login failed';
+                        loginError.style.display = 'block';
                     }
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                if (errorElement) {
-                    errorElement.textContent = 'An unexpected error occurred during login.';
-                    errorElement.style.display = 'block';
+                if (loginError) {
+                    loginError.textContent = 'An unexpected error occurred during login.';
+                    loginError.style.display = 'block';
                 }
             }
         });
     }
 
     const toggleButton = document.getElementById('toggleKeyVisibility');
-    const keyInput = document.getElementById('key');
     const eyeOpen = toggleButton ? toggleButton.querySelector('.eye-open') : null;
     const eyeClosed = toggleButton ? toggleButton.querySelector('.eye-closed') : null;
 
