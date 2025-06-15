@@ -10,9 +10,20 @@
     <!-- <link rel="icon" href="/static/favicon.ico" type="image/x-icon"> -->
 </head>
 <body>
+    <div class="chat-header">
+        <div class="header-main-content">
+            <h1>Apoyo Docente NEAE</h1>
+            <p>Asistente especializado en apoyo a docentes y orientadores en la atención al alumnado NEAE. Proporciona propuestas de actividades, adaptaciones metodológicas y evaluativas, recursos abiertos y estrategias inclusivas para todas las etapas educativas.</p>
+        </div>
+        <div class="header-user-controls">
+            <!-- Usage info and logout might be dynamically shown/hidden or adapted by JS based on context -->
+            <div class="usage-info" id="usageInfo" style="display: none;">Uso: ... / ...</div>
+            <a href="#" id="logoutButton" class="logout-button" style="display: none;">Logout</a>
+        </div>
+    </div>
     <div id="app">
         <!-- SPA content will be loaded here by router.js -->
-        <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 1.5em;">
+        <div style="display: flex; justify-content: center; align-items: center; font-size: 1.5em; width: 100%; height: 100%;">
             Cargando...
         </div>
     </div>
