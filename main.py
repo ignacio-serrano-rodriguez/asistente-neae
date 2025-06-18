@@ -183,12 +183,12 @@ async def login_page_get():
 async def login_submit(request: Request, key: str = Form(...)):
     if key in fake_keys_db:
         # For SPA, set cookie and return success. Client will re-route.
-        response = JSONResponse(content={"message": "Login successful. Cookie has been set."})
+        response = JSONResponse(content={"message": "Inicio de sesión exitoso. Cookie establecida."})
         response.set_cookie(key="auth_key", value=key)
         return response
     else:
         # SPA expects a JSON error for failed login
-        raise HTTPException(status_code=401, detail="Invalid key")
+        raise HTTPException(status_code=401, detail="Clave no válida")
 
 @app.get("/chat", response_class=FileResponse)
 async def chat_interface_get():
@@ -199,7 +199,7 @@ async def chat_interface_get():
 async def logout(request: Request):
     # Server clears the cookie.
     # SPA will detect lack of cookie on next interaction or route change and show login.
-    response = JSONResponse(content={"message": "Logout successful. Cookie has been cleared."})
+    response = JSONResponse(content={"message": "Cierre de sesión exitoso. Cookie eliminada."})
     response.delete_cookie("auth_key")
     return response
 
@@ -207,7 +207,7 @@ async def logout(request: Request):
 @app.get("/api/user-data", tags=["User"])
 async def get_user_data(request: Request, auth_key: str = Depends(get_current_user_key)):
     if not auth_key or auth_key not in fake_keys_db:
-        raise HTTPException(status_code=401, detail="Not authenticated or invalid key")
+        raise HTTPException(status_code=401, detail="No autenticado o clave inválida")
     
     key_data = fake_keys_db[auth_key]
     return {
@@ -232,9 +232,9 @@ class ChatMessageResponse(BaseModel):
 @app.post("/chat/start", response_model=ChatInitResponse, tags=["Chat"])
 async def start_chat_session(auth_key: str = Depends(get_current_user_key)):
     if not auth_key or auth_key not in fake_keys_db:
-        raise HTTPException(status_code=401, detail="Not authenticated or invalid key")
+        raise HTTPException(status_code=401, detail="No autenticado o clave inválida")
     if not modelo_gemini:
-        raise HTTPException(status_code=503, detail="Chat service not available: Model not loaded.")
+        raise HTTPException(status_code=503, detail="Servicio de chat no disponible: Modelo no cargado.")
     try:
         initial_history = [
             {"role": "user", "parts": [SYSTEM_PROMPT_ASISTENTE_NEAE]},
@@ -248,17 +248,17 @@ async def start_chat_session(auth_key: str = Depends(get_current_user_key)):
             message="Hola, soy tu Asistente NEAE. Sesión iniciada."
         )
     except Exception as e:
-        print(f"Error starting chat session: {e}")
+        print(f"Error al iniciar sesión de chat: {e}")
         raise HTTPException(status_code=500, detail=f"Error interno al iniciar el chat: {str(e)}")
 
 @app.post("/chat/send", response_model=ChatMessageResponse, tags=["Chat"])
 async def send_chat_message(request: ChatMessageRequest, auth_key: str = Depends(get_current_user_key)):
     if not auth_key or auth_key not in fake_keys_db:
-        raise HTTPException(status_code=401, detail="Not authenticated or invalid key")
+        raise HTTPException(status_code=401, detail="No autenticado o clave inválida")
 
     key_data = fake_keys_db[auth_key]
     if key_data["count"] >= key_data["max_uses"]:
-        raise HTTPException(status_code=403, detail="Maximum API usage reached for this key.")
+        raise HTTPException(status_code=403, detail="Máximo uso de API alcanzado para esta clave.")
 
     chat_session = chat_sessions.get(request.session_id)
     if not chat_session:
@@ -266,7 +266,7 @@ async def send_chat_message(request: ChatMessageRequest, auth_key: str = Depends
     if not request.pregunta or not request.pregunta.strip():
         raise HTTPException(status_code=400, detail="La pregunta no puede estar vacía.")
     if not modelo_gemini: # Comprobar de nuevo si el modelo está disponible
-        raise HTTPException(status_code=503, detail="Chat service not available: Model not loaded.")
+        raise HTTPException(status_code=503, detail="Servicio de chat no disponible: Modelo no cargado.")
 
     try:
         print(f"🤖 Asistente NEAE (API) pensando para sesión {request.session_id}...")
@@ -285,7 +285,7 @@ async def send_chat_message(request: ChatMessageRequest, auth_key: str = Depends
         increment_user_usage(auth_key)
         return ChatMessageResponse(session_id=request.session_id, respuesta=response_text)
     except Exception as e:
-        print(f"Error sending message to Gemini: {e}")
+        print(f"Error al enviar mensaje a Gemini: {e}")
         # Podrías querer ser más específico con el error aquí
         if isinstance(e, HTTPException): # Re-raise si ya es una HTTPException
              raise
@@ -298,22 +298,21 @@ async def reload_keys():
     try:
         new_keys = reload_user_keys()
         return {
-            "message": "User keys reloaded successfully",
+            "message": "Claves de usuario recargadas exitosamente",
             "keys_count": len(new_keys),
             "keys": list(new_keys.keys())
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error reloading keys: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al recargar claves: {str(e)}")
 
 @app.get("/admin/keys-status", tags=["Admin"])
 async def get_keys_status():
     """Get current status of all user keys"""
     try:
         keys_status = {}
-        for key, data in fake_keys_db.items():
-            keys_status[key] = {
-                "user_id": data.get("user_id", "unknown"),
-                "description": data.get("description", "No description"),
+        for key, data in fake_keys_db.items():            keys_status[key] = {
+                "user_id": data.get("user_id", "desconocido"),
+                "description": data.get("description", "Sin descripción"),
                 "usage_count": data["count"],
                 "max_uses": data["max_uses"],
                 "usage_percentage": round((data["count"] / data["max_uses"]) * 100, 1),
@@ -325,21 +324,21 @@ async def get_keys_status():
             "keys_status": keys_status
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting keys status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al obtener estado de claves: {str(e)}")
 
 # Debug endpoint to test logout button issues
 @app.get("/debug/elements", tags=["Debug"])
 async def debug_elements():
     """Debug endpoint to check if elements are being served correctly"""
     return {
-        "message": "Debug endpoint working",
+        "message": "Endpoint de depuración funcionando",
         "expected_elements": [
-            "usageInfo - should be in header",
-            "logoutButton - should be in header", 
-            "Both should be hidden by default",
-            "Both should be shown after SessionManager.updateUsageDisplay() is called"
+            "usageInfo - debería estar en el header",
+            "logoutButton - debería estar en el header", 
+            "Ambos deberían estar ocultos por defecto",
+            "Ambos deberían mostrarse después de llamar SessionManager.updateUsageDisplay()"
         ],
-        "check_console": "Look for SessionManager debug logs"
+        "check_console": "Busca los logs de depuración de SessionManager"
     }
 
 if __name__ == "__main__":
