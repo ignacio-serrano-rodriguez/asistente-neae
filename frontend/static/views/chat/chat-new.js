@@ -136,9 +136,14 @@ if (window.NEAE_CHAT_LOADED) {
                         throw new Error(errorMessage);
                     });
                 }
-                return response.json();
-            }).then(function(data) {
+                return response.json();            }).then(function(data) {
                 self.addMessage(data.respuesta, 'assistant');
+                
+                // Increment usage counter in real-time
+                if (window.SessionManager && window.SessionManager.incrementUsageCounter) {
+                    window.SessionManager.incrementUsageCounter();
+                    console.log('✅ Usage counter incremented after successful message');
+                }
             }).catch(function(error) {
                 console.error('Error sending message:', error);
                 if(loadingMessage && loadingMessage.remove) loadingMessage.remove();

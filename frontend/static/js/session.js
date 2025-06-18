@@ -173,6 +173,31 @@ class SessionManager {
     }
 
     /**
+     * Increment usage counter in real-time
+     * Updates both the cached user data and the UI display
+     */
+    static incrementUsageCounter() {
+        console.log('🔄 SessionManager.incrementUsageCounter called');
+        
+        // Update cached user data
+        const cachedData = this.getCachedUserData();
+        if (cachedData) {
+            cachedData.usage_count += 1;
+            localStorage.setItem(this.STORAGE_KEYS.USER_DATA, JSON.stringify(cachedData));
+            console.log('✅ Cached usage count incremented to:', cachedData.usage_count);
+            
+            // Update UI immediately
+            const usageInfo = document.getElementById('usageInfo');
+            if (usageInfo) {
+                usageInfo.textContent = `Uso: ${cachedData.usage_count} / ${cachedData.max_uses}`;
+                console.log('✅ Usage display updated to:', cachedData.usage_count);
+            }
+        } else {
+            console.warn('⚠️ No cached user data found to increment');
+        }
+    }
+
+    /**
      * Reset logout button to its default state
      */
     static resetLogoutButtonState(logoutButton) {
