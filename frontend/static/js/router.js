@@ -31,23 +31,44 @@ async function loadPage(pageName) {
             if (userData) {
                 SessionManager.updateUsageDisplay(userData);
             }
-            break;
-        default:
+            break;        default:
             content = '<h1>404 - Página No Encontrada</h1>';
-            if (rootDiv) rootDiv.innerHTML = content;
+            try {
+                if (rootDiv) rootDiv.innerHTML = content;
+            } catch (domError) {
+                // Silently handle extension-related DOM errors
+            }
             removeViewScript();
             return;
-    }
-
-    try {
+    }    try {
         const response = await fetch(htmlPath);
         if (!response.ok) throw new Error(`Failed to load HTML: ${htmlPath} (${response.status})`);
         content = await response.text();
-        if (rootDiv) rootDiv.innerHTML = content;
+        
+        // Safely update DOM content with protection against extension interference
+        try {
+            if (rootDiv) {
+                rootDiv.innerHTML = content;
+            }
+        } catch (domError) {
+            // If DOM manipulation fails (likely due to extension interference), retry
+            setTimeout(() => {
+                try {
+                    if (rootDiv) rootDiv.innerHTML = content;
+                } catch (retryError) {
+                    // Silently handle extension-related errors
+                }
+            }, 10);
+        }
+        
         await loadAndExecuteViewScript(viewScriptPath, viewInitFunction);
     } catch (error) {
         console.error("Error loading page:", error);
-        if (rootDiv) rootDiv.innerHTML = '<h1>Error loading page content.</h1>';
+        try {
+            if (rootDiv) rootDiv.innerHTML = '<h1>Error loading page content.</h1>';
+        } catch (domError) {
+            // Silently handle DOM errors during error display
+        }
         removeViewScript();
     }
 }

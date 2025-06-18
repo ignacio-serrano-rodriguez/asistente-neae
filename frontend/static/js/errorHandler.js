@@ -3,6 +3,54 @@
  * Provides consistent error handling and user feedback
  */
 
+// Global error handler to suppress third-party extension errors
+window.addEventListener('error', function(event) {
+    // Check if error is from browser extension (autofill, password managers, etc.)
+    if (event.filename && (
+        event.filename.includes('bootstrap-autofill-overlay') ||
+        event.filename.includes('extension') ||
+        event.filename.includes('chrome-extension') ||
+        event.filename.includes('moz-extension') ||
+        event.filename.includes('safari-web-extension')
+    )) {
+        // Suppress the error to prevent it from appearing in console
+        event.preventDefault();
+        event.stopPropagation();
+        return true;
+    }
+    
+    // Check if error message indicates extension-related issues
+    if (event.message && (
+        event.message.includes('insertBefore') ||
+        event.message.includes('removeChild') ||
+        event.message.includes('Node') ||
+        event.message.includes('autofill') ||
+        event.message.includes('bootstrap-autofill-overlay')
+    )) {
+        // Suppress extension-related DOM manipulation errors
+        event.preventDefault();
+        event.stopPropagation();
+        return true;
+    }
+    
+    // Let other errors through normally
+    return false;
+});
+
+// Global promise rejection handler for extension errors
+window.addEventListener('unhandledrejection', function(event) {
+    if (event.reason && event.reason.message && (
+        event.reason.message.includes('insertBefore') ||
+        event.reason.message.includes('bootstrap-autofill-overlay') ||
+        event.reason.message.includes('autofill')
+    )) {
+        // Suppress extension-related promise rejections
+        event.preventDefault();
+        return true;
+    }
+    return false;
+});
+
 class ErrorHandler {
     static ERROR_MESSAGES = {
         NETWORK_ERROR: 'Error de conexión. Verifica tu conexión a internet.',
