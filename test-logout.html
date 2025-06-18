@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEAE Assistant - Test Logout</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🧪 NEAE Assistant - Logout Test</h1>
+    
+    <div class="test-section">
+        <h3>📋 Test Instructions</h3>
+        <ol>
+            <li>Open browser developer tools (F12)</li>
+            <li>Go to the main application: <a href="/" target="_blank">Open NEAE Assistant</a></li>
+            <li>Login with a valid key</li>
+            <li>Check if the logout button appears in the header</li>
+            <li>Click the logout button</li>
+            <li>Verify it returns to login and clears session</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h3>🔍 Browser Console Checks</h3>
+        <p>Look for these messages in the console:</p>
+        <ul>
+            <li>✅ "SessionManager.updateUsageDisplay called with: ..."</li>
+            <li>✅ "Found elements: {usageInfo: ..., logoutButton: ...}"</li>
+            <li>✅ "Logout button shown and click handler attached"</li>
+            <li>❌ No "Identifier 'NEAEChatInterface' has already been declared" errors</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h3>🔧 Manual Tests</h3>
+        <button onclick="testSessionManager()">Test SessionManager</button>
+        <button onclick="testElements()">Test DOM Elements</button>
+        <button onclick="clearCache()">Clear Browser Cache</button>
+        
+        <div id="testResults"></div>
+    </div>
+
+    <script>
+        function testSessionManager() {
+            const results = document.getElementById('testResults');
+            let html = '<h4>SessionManager Test Results:</h4>';
+            
+            if (typeof SessionManager !== 'undefined') {
+                html += '<p class="success">✅ SessionManager is available</p>';
+                
+                if (typeof SessionManager.isAuthenticated === 'function') {
+                    html += '<p class="success">✅ SessionManager.isAuthenticated method exists</p>';
+                } else {
+                    html += '<p class="error">❌ SessionManager.isAuthenticated method missing</p>';
+                }
+                
+                if (typeof SessionManager.logout === 'function') {
+                    html += '<p class="success">✅ SessionManager.logout method exists</p>';
+                } else {
+                    html += '<p class="error">❌ SessionManager.logout method missing</p>';
+                }
+            } else {
+                html += '<p class="error">❌ SessionManager not available (script not loaded)</p>';
+            }
+            
+            results.innerHTML = html;
+        }
+        
+        function testElements() {
+            const results = document.getElementById('testResults');
+            let html = '<h4>DOM Elements Test:</h4>';
+            
+            // These elements should be in the main app, not this test page
+            html += '<p><strong>Note:</strong> These elements should be tested in the main application</p>';
+            html += '<p>Elements to check in main app:</p>';
+            html += '<ul>';
+            html += '<li>usageInfo element (should exist)</li>';
+            html += '<li>logoutButton element (should exist)</li>';
+            html += '<li>Both should be hidden by default</li>';
+            html += '<li>Both should be shown after login</li>';
+            html += '</ul>';
+            
+            results.innerHTML = html;
+        }
+        
+        function clearCache() {
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    for (let name of names) caches.delete(name);
+                });
+            }
+            localStorage.clear();
+            sessionStorage.clear();
+            location.reload();
+        }
+    </script>
+</body>
+</html>

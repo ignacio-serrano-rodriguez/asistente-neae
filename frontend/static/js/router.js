@@ -22,10 +22,9 @@ async function loadPage(pageName) {
             viewInitFunction = 'initializeLoginPage';
             // Hide user controls on login page
             SessionManager.hideUserControls();
-            break;
-        case 'chat':
+            break;        case 'chat':
             htmlPath = '/static/views/chat/chat.html';
-            viewScriptPath = '/static/views/chat/chat.js';
+            viewScriptPath = '/static/views/chat/chat-new.js';
             viewInitFunction = 'initializeChatPage';
             // Update user controls for authenticated user
             const userData = await SessionManager.fetchUserData();
@@ -57,6 +56,29 @@ function removeViewScript() {
     const existingScript = document.getElementById('view-script');
     if (existingScript) {
         existingScript.remove();
+        console.log('Removed existing view script');
+    }
+    
+    // Clear any globals to prevent redeclaration errors
+    try {
+        if (window.initializeChatPage) {
+            delete window.initializeChatPage;
+            console.log('Cleared initializeChatPage');
+        }
+        if (window.initializeLoginPage) {
+            delete window.initializeLoginPage;
+            console.log('Cleared initializeLoginPage');
+        }
+        if (window.NEAEChatInterface) {
+            delete window.NEAEChatInterface;
+            console.log('Cleared NEAEChatInterface');
+        }
+        if (window.NEAE_CHAT_LOADED) {
+            delete window.NEAE_CHAT_LOADED;
+            console.log('Cleared NEAE_CHAT_LOADED flag');
+        }
+    } catch (e) {
+        console.warn('Error clearing globals:', e);
     }
 }
 
@@ -66,20 +88,25 @@ async function loadAndExecuteViewScript(scriptPath, initFunctionName) {
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.id = 'view-script';
-        script.src = scriptPath;
+        // Add cache busting to force fresh load
+        script.src = scriptPath + '?v=' + Date.now();
         script.onload = async () => {
-            if (typeof window[initFunctionName] === 'function') {
-                try {
-                    await window[initFunctionName](); 
-                    resolve();
-                } catch (e) {
-                    console.error(`Error executing ${initFunctionName}:`, e);
-                    reject(e);
+            // Wait a bit for the script to fully load and parse
+            setTimeout(async () => {
+                if (typeof window[initFunctionName] === 'function') {
+                    try {
+                        console.log(`Executing ${initFunctionName}...`);
+                        await window[initFunctionName](); 
+                        resolve();
+                    } catch (e) {
+                        console.error(`Error executing ${initFunctionName}:`, e);
+                        reject(e);
+                    }
+                } else {
+                    console.error(`${initFunctionName} not found after loading ${scriptPath}`);
+                    reject(new Error(`${initFunctionName} not found`));
                 }
-            } else {
-                console.error(`${initFunctionName} not found after loading ${scriptPath}`);
-                reject(new Error(`${initFunctionName} not found`));
-            }
+            }, 50); // Small delay to ensure script is fully parsed
         };
         script.onerror = () => {
             console.error(`Failed to load script: ${scriptPath}`);
@@ -91,11 +118,6 @@ async function loadAndExecuteViewScript(scriptPath, initFunctionName) {
 
 function getCookie(name) {
     return SessionManager.getCookie(name);
-}
-
-// Global logout function
-window.handleLogout = function() {
-    SessionManager.logout();
 }
 
 function router() {

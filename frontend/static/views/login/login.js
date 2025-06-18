@@ -1,12 +1,23 @@
 // filepath: frontend/static/views/login/login.js
-document.addEventListener('DOMContentLoaded', () => {
-    initializeLoginPage();
-});
 
-function initializeLoginPage() {
-    console.log("Login page loaded from login.js");
-    const loginForm = document.getElementById('loginForm');
-    const keyInput = document.getElementById('key'); 
+// Use IIFE to prevent conflicts
+(function() {
+    'use strict';
+    
+    // Prevent redeclaration
+    if (window.initializeLoginPage) {
+        console.log('Login script already loaded');
+        return;
+    }
+
+    function initializeLoginPage() {
+        console.log("Login page loaded from login.js");
+        
+        // Hide user controls when on login page
+        SessionManager.hideUserControls();
+        
+        const loginForm = document.getElementById('loginForm');
+        const keyInput = document.getElementById('key');
 
     if (keyInput) { 
         keyInput.focus();
@@ -65,7 +76,11 @@ function initializeLoginPage() {
                 keyInput.type = 'password';
                 eyeOpen.style.display = 'block';
                 eyeClosed.style.display = 'none';
-            }
-        });
+            }        });
     }
-}
+    }
+
+    // Export to global scope
+    window.initializeLoginPage = initializeLoginPage;
+
+})();

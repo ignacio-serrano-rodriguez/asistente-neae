@@ -233,5 +233,20 @@ async def send_chat_message(request: ChatMessageRequest, auth_key: str = Depends
              raise
         raise HTTPException(status_code=500, detail=f"Error interno al procesar el mensaje: {str(e)}")
 
+# Debug endpoint to test logout button issues
+@app.get("/debug/elements", tags=["Debug"])
+async def debug_elements():
+    """Debug endpoint to check if elements are being served correctly"""
+    return {
+        "message": "Debug endpoint working",
+        "expected_elements": [
+            "usageInfo - should be in header",
+            "logoutButton - should be in header", 
+            "Both should be hidden by default",
+            "Both should be shown after SessionManager.updateUsageDisplay() is called"
+        ],
+        "check_console": "Look for SessionManager debug logs"
+    }
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
