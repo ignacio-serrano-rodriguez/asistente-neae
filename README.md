@@ -53,15 +53,24 @@ La interfaz te redirigirá automáticamente a la aplicación de chat.
 ```
 asistente-neae/
 ├── main.py                # Servidor FastAPI con endpoints de chat
-├── api_keys.json          # Claves API para autenticación
+├── user_keys.json         # Claves de usuario y límites de uso
+├── user_keys.example.json # Ejemplo de configuración de claves
 ├── prompt.txt             # Instrucciones del sistema para el asistente
 ├── .env                   # Variables de entorno
-├── credenciales.json      # Credenciales de Google
-├── static/                # Archivos de la interfaz web
-│   ├── index.html         # Página HTML principal
-│   ├── styles.css         # Estilos CSS y animaciones
-│   ├── script.js          # Funcionalidad JavaScript
-│   └── config.js          # Configuración (clave API preconfigurada)
+├── credenciales_google.json # Credenciales de Google
+├── frontend/              # Archivos de la interfaz web (SPA)
+│   └── static/            # Assets estáticos
+│       ├── index.html     # Shell de la aplicación SPA
+│       ├── css/
+│       │   └── app.css    # Estilos CSS
+│       ├── js/
+│       │   ├── router.js  # Router SPA
+│       │   ├── session.js # Gestión de sesiones
+│       │   ├── errorHandler.js # Manejo de errores
+│       │   └── config.js  # Configuración frontend
+│       └── views/         # Vistas SPA
+│           ├── chat/      # Vista de chat
+│           └── login/     # Vista de login
 ├── test_setup.py          # Script de verificación de configuración
 ├── README.md              # Esta documentación
 └── LICENSE                # Licencia del proyecto
@@ -69,18 +78,46 @@ asistente-neae/
 
 ## 🔧 Configuración
 
-### Claves API
+### Configuración de Claves de Usuario
 
-Tu sistema incluye múltiples claves API en `api_keys.json`. Una ya está preconfigurada:
+El sistema utiliza un archivo `user_keys.json` para gestionar las claves de usuario y sus límites de uso:
 
-Para cambiar la clave API, edita `static/config.js`:
+1. **Crear el archivo de configuración:**
 
-```javascript
-const CONFIG = {
-  API_KEY: "tu_clave_api_elegida_aquí",
-  API_BASE_URL: window.location.origin,
-};
-```
+   ```bash
+   cp user_keys.example.json user_keys.json
+   ```
+
+2. **Editar las claves de usuario:**
+
+   ```json
+   {
+     "tu_clave_personalizada": {
+       "count": 0,
+       "max_uses": 100,
+       "user_id": "usuario1",
+       "description": "Descripción del usuario"
+     },
+     "otra_clave": {
+       "count": 0,
+       "max_uses": 50,
+       "user_id": "usuario2",
+       "description": "Usuario secundario"
+     }
+   }
+   ```
+
+3. **Campos de configuración:**
+
+   - `count`: Número actual de usos (se incrementa automáticamente)
+   - `max_uses`: Límite máximo de usos por clave
+   - `user_id`: Identificador único del usuario
+   - `description`: Descripción opcional del usuario
+
+4. **Recargar configuración:**
+   - Las claves se cargan automáticamente al iniciar el servidor
+   - Para recargar sin reiniciar: `POST /admin/reload-keys`
+   - Ver estado actual: `GET /admin/keys-status`
 
 ### Configuración del Entorno
 

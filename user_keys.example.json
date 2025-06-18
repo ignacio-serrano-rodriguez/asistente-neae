@@ -1,0 +1,20 @@
+{
+    "example_user_key_1": {
+        "count": 0,
+        "max_uses": 100,
+        "user_id": "user1",
+        "description": "Usuario principal - 100 usos"
+    },
+    "example_user_key_2": {
+        "count": 0,
+        "max_uses": 50,
+        "user_id": "user2",
+        "description": "Usuario secundario - 50 usos"
+    },
+    "demo_key": {
+        "count": 0,
+        "max_uses": 25,
+        "user_id": "demo",
+        "description": "Usuario de demostración - 25 usos"
+    }
+}

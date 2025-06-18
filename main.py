@@ -1,4 +1,6 @@
+import json
 import os
+from pathlib import Path
 import json
 from dotenv import load_dotenv
 # Removed: from google.ai.generativelanguage import GoogleSearchRetrieval
@@ -101,10 +103,66 @@ app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 # Remove template dependency for pure SPA approach
 # templates = Jinja2Templates(directory="frontend/templates")
 
-fake_keys_db = {
-    "supersecretkey": {"count": 0, "max_uses": 100, "user_id": "user1"},
-    "anothersecretkey": {"count": 0, "max_uses": 50, "user_id": "user2"}
-}
+# User keys management
+USER_KEYS_FILE = Path(__file__).parent / "user_keys.json"
+
+def load_user_keys():
+    """Load user keys from external JSON file"""
+    try:
+        if USER_KEYS_FILE.exists():
+            with open(USER_KEYS_FILE, 'r', encoding='utf-8') as f:
+                keys_data = json.load(f)
+                print(f"✅ User keys loaded from {USER_KEYS_FILE}")
+                print(f"📊 Found {len(keys_data)} user keys configured")
+                return keys_data
+        else:
+            print(f"⚠️ User keys file not found: {USER_KEYS_FILE}")
+            print("📝 Creating default user keys file...")
+            default_keys = {
+                "supersecretkey": {"count": 0, "max_uses": 100, "user_id": "user1", "description": "Usuario principal"},
+                "anothersecretkey": {"count": 0, "max_uses": 50, "user_id": "user2", "description": "Usuario secundario"}
+            }
+            save_user_keys(default_keys)
+            return default_keys
+    except json.JSONDecodeError as e:
+        print(f"❌ Error parsing user keys JSON: {e}")
+        return {}
+    except Exception as e:
+        print(f"❌ Error loading user keys: {e}")
+        return {}
+
+def save_user_keys(keys_data):
+    """Save user keys to external JSON file"""
+    try:
+        with open(USER_KEYS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(keys_data, f, indent=4, ensure_ascii=False)
+        print(f"💾 User keys saved to {USER_KEYS_FILE}")
+    except Exception as e:
+        print(f"❌ Error saving user keys: {e}")
+
+def get_user_keys():
+    """Get current user keys, reload if needed"""
+    global fake_keys_db
+    if not fake_keys_db:
+        fake_keys_db = load_user_keys()
+    return fake_keys_db
+
+def reload_user_keys():
+    """Force reload user keys from file"""
+    global fake_keys_db
+    fake_keys_db = load_user_keys()
+    return fake_keys_db
+
+def increment_user_usage(user_key: str):
+    """Increment usage count for a user key and save to file"""
+    global fake_keys_db
+    if user_key in fake_keys_db:
+        fake_keys_db[user_key]["count"] += 1
+        save_user_keys(fake_keys_db)
+        print(f"📈 Usage incremented for key {user_key}: {fake_keys_db[user_key]['count']}/{fake_keys_db[user_key]['max_uses']}")
+
+# Load user keys at startup
+fake_keys_db = load_user_keys()
 
 chat_sessions = {} # Almacén en memoria para sesiones de chat
 
@@ -224,7 +282,7 @@ async def send_chat_message(request: ChatMessageRequest, auth_key: str = Depends
             print(f"Respuesta inesperada del modelo: {response}")
             raise HTTPException(status_code=500, detail="Formato de respuesta inesperado del modelo.")
 
-        key_data["count"] += 1
+        increment_user_usage(auth_key)
         return ChatMessageResponse(session_id=request.session_id, respuesta=response_text)
     except Exception as e:
         print(f"Error sending message to Gemini: {e}")
@@ -232,6 +290,42 @@ async def send_chat_message(request: ChatMessageRequest, auth_key: str = Depends
         if isinstance(e, HTTPException): # Re-raise si ya es una HTTPException
              raise
         raise HTTPException(status_code=500, detail=f"Error interno al procesar el mensaje: {str(e)}")
+
+# Admin endpoints for user key management
+@app.post("/admin/reload-keys", tags=["Admin"])
+async def reload_keys():
+    """Reload user keys from the configuration file"""
+    try:
+        new_keys = reload_user_keys()
+        return {
+            "message": "User keys reloaded successfully",
+            "keys_count": len(new_keys),
+            "keys": list(new_keys.keys())
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reloading keys: {str(e)}")
+
+@app.get("/admin/keys-status", tags=["Admin"])
+async def get_keys_status():
+    """Get current status of all user keys"""
+    try:
+        keys_status = {}
+        for key, data in fake_keys_db.items():
+            keys_status[key] = {
+                "user_id": data.get("user_id", "unknown"),
+                "description": data.get("description", "No description"),
+                "usage_count": data["count"],
+                "max_uses": data["max_uses"],
+                "usage_percentage": round((data["count"] / data["max_uses"]) * 100, 1),
+                "remaining_uses": data["max_uses"] - data["count"]
+            }
+        return {
+            "total_keys": len(fake_keys_db),
+            "keys_file": str(USER_KEYS_FILE),
+            "keys_status": keys_status
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting keys status: {str(e)}")
 
 # Debug endpoint to test logout button issues
 @app.get("/debug/elements", tags=["Debug"])
