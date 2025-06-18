@@ -139,6 +139,18 @@ body {
     background-clip: text;
 }
 
+/* Logo styles */
+.brand-logo {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    border-radius: var(--radius-md);
+    background: white;
+    padding: 2px;
+    box-shadow: var(--shadow-sm);
+    border: 3px solid var(--border-medium);
+}
+
 .nav-controls {
     display: flex;
     align-items: center;
@@ -655,6 +667,18 @@ body {
     justify-content: center;
     color: var(--text-inverse);
     margin: 0 auto var(--spacing-lg);
+}
+
+/* Logo styles */
+.login-logo {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    border-radius: var(--radius-xl);
+    background: white;
+    padding: 4px;
+    box-shadow: var(--shadow-md);
+    border: 3px solid var(--border-medium);
 }
 
 .input-with-toggle {
