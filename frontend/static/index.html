@@ -5,26 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Asistente NEAE</title>
     <link rel="stylesheet" href="/static/css/app.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Modern icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.css" rel="stylesheet">
     <!-- Favicon (optional but good practice) -->
     <!-- <link rel="icon" href="/static/favicon.ico" type="image/x-icon"> -->
 </head>
 <body>
-    <div class="chat-header">
-        <div class="header-main-content">
-            <h1>Apoyo Docente NEAE</h1>            <p>Asistente especializado en apoyo a docentes y orientadores en la atención al alumnado NEAE. Proporciona propuestas de actividades, adaptaciones metodológicas y evaluativas, recursos abiertos y estrategias inclusivas para todas las etapas educativas.</p>
+    <!-- Modern navigation bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <div class="brand-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 12l2 2 4-4"/>
+                        <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c1.84 0 3.55.55 4.98 1.5"/>
+                    </svg>
+                </div>
+                <span class="brand-text">Asistente NEAE</span>
+            </div>
+            <div class="nav-controls">
+                <div class="usage-info" id="usageInfo" style="display: none;">
+                    <span class="usage-count">0 / 100</span>
+                    <span class="usage-label">consultas</span>
+                </div>
+                <button id="logoutButton" class="logout-button" style="display: none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16,17 21,12 16,7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    Cerrar Sesión
+                </button>
+            </div>
         </div>
-        <div class="header-user-controls">
-            <!-- Usage info and logout controls -->
-            <span class="usage-info" id="usageInfo" style="display: none;">Uso: ... / ...</span>
-            <button id="logoutButton" class="logout-button" style="display: none;">Cerrar Sesión</button>
+    </nav>
+
+    <!-- Main application container -->
+    <main class="main-content" id="app">
+        <!-- Loading state -->
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <span class="loading-text">Cargando asistente...</span>
         </div>
-    </div>
-    <div id="app">
-        <!-- SPA content will be loaded here by router.js -->
-        <div style="display: flex; justify-content: center; align-items: center; font-size: 1.5em; width: 100%; height: 100%;">
-            Cargando...
-        </div>
-    </div>    <!-- Configuration script -->
+    </main>
+
+    <!-- Configuration script -->
     <script src="/static/js/config.js"></script>
     <!-- Error handling utility -->
     <script src="/static/js/errorHandler.js"></script>
@@ -32,5 +60,9 @@
     <script src="/static/js/session.js"></script>
     <!-- Router script -->
     <script src="/static/js/router.js"></script>
+    
+    <!-- Feather icons initialization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.js"></script>
+    <script>feather.replace()</script>
 </body>
 </html>

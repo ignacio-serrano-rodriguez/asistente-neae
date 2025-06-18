@@ -1,35 +1,73 @@
-<div class="chat-container">
-    <!-- Header removed, will be in index.html -->
-    
+<!-- Modern chat interface -->
+<div class="chat-interface">
+    <!-- Connection status indicator -->
     <div id="connectionStatus" class="connection-status" aria-live="polite">
-        Conectando con el asistente...
+        <div class="status-indicator connected"></div>
+        <span>Conectado</span>
     </div>
     
-    <div id="chatMessages" class="chat-messages" aria-live="polite">
-        <!-- Initial welcome message can be added by JS if desired, or kept static if preferred -->
-        <div class="message assistant">
-            <div class="message-content">
-                <strong>¡Hola! 👋</strong><br><br>
-                Soy tu Asistente NEAE de Apoyo Docente para Andalucía. Estoy aquí para ayudarte con:
-                <br><br>
-                • Adaptaciones curriculares y metodológicas<br>
-                • Recursos especializados para NEAE<br>
-                • Estrategias inclusivas para el aula<br>
-                • Normativa educativa andaluza<br>
-                <br>
-                ¿En qué puedo ayudarte hoy?
+    <!-- Chat messages container -->
+    <div class="chat-container">
+        <div id="chatMessages" class="chat-messages" aria-live="polite">
+            <!-- Welcome message -->
+            <div class="message-wrapper assistant-message">
+                <div class="message-avatar">
+                    <div class="avatar-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="message-content">
+                    <div class="message-text">
+                        <div class="welcome-title">¡Hola! Soy tu Asistente NEAE 👋</div>
+                        <div class="welcome-subtitle">Especializado en apoyo docente para Andalucía</div>
+                        <div class="capabilities-grid">
+                            <div class="capability-item">
+                                <div class="capability-icon">📚</div>
+                                <div class="capability-text">Adaptaciones curriculares</div>
+                            </div>
+                            <div class="capability-item">
+                                <div class="capability-icon">🎯</div>
+                                <div class="capability-text">Recursos especializados</div>
+                            </div>
+                            <div class="capability-item">
+                                <div class="capability-icon">🤝</div>
+                                <div class="capability-text">Estrategias inclusivas</div>
+                            </div>
+                            <div class="capability-item">
+                                <div class="capability-icon">📋</div>
+                                <div class="capability-text">Normativa educativa</div>
+                            </div>
+                        </div>
+                        <div class="welcome-footer">¿En qué puedo ayudarte hoy?</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
     
-    <div class="chat-input-container">
-        <input 
-            type="text" 
-            id="chatInput" 
-            class="chat-input" 
-            placeholder="Escribe tu consulta sobre NEAE aquí..."
-            maxlength="1000"
-        >
-        <button id="sendButton" class="send-button">Enviar</button>
+    <!-- Chat input area -->
+    <div class="chat-input-area">
+        <div class="input-container">
+            <div class="input-wrapper">
+                <textarea 
+                    id="chatInput" 
+                    class="chat-input" 
+                    placeholder="Escribe tu consulta sobre NEAE aquí..."
+                    rows="1"
+                    maxlength="1000"
+                ></textarea>
+                <button id="sendButton" class="send-button" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"/>
+                        <polygon points="22,2 15,22 11,13 2,9 22,2"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="input-footer">
+                <span class="input-hint">Presiona Enter para enviar, Shift+Enter para nueva línea</span>
+            </div>
+        </div>
     </div>
 </div>

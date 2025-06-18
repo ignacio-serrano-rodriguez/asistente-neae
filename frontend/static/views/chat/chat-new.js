@@ -32,10 +32,10 @@ if (window.NEAE_CHAT_LOADED) {
             instance.isLoading = false;
             return instance;
         },
-        
-        init: function() {
+          init: function() {
             this.initializeElements();
             this.attachEventListeners();
+            this.setupInitialState();
             this.initializeSession();
         },
 
@@ -46,26 +46,74 @@ if (window.NEAE_CHAT_LOADED) {
             this.connectionStatus = document.getElementById('connectionStatus');
         },
         
+        setupInitialState: function() {
+            // Initialize loading state
+            this.isLoading = false;
+            
+            // Set initial send button state
+            this.updateSendButtonState();
+            
+            // Focus on input if available
+            if (this.chatInput) {
+                this.chatInput.focus();
+            }        },
+        
         attachEventListeners: function() {
             const self = this;
-             if (this.sendButton) {
-                 this.sendButton.addEventListener('click', function() {
-                     self.sendMessage();
-                 });
-             }
-             if (this.chatInput) {
+            if (this.sendButton) {
+                this.sendButton.addEventListener('click', function() {
+                    self.sendMessage();
+                });
+            }
+            if (this.chatInput) {
+                // Handle Enter key (send message, Shift+Enter for new line)
                 this.chatInput.addEventListener('keypress', function(e) {
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
                         self.sendMessage();
                     }
                 });
+                
+                // Handle input changes
                 this.chatInput.addEventListener('input', function(e) {
+                    // Auto-resize textarea
+                    self.autoResizeTextarea(e.target);
+                    
+                    // Update send button state
+                    self.updateSendButtonState();
+                    
+                    // Enforce max length
                     if (e.target.value.length > CONFIG.MAX_MESSAGE_LENGTH) {
                         e.target.value = e.target.value.substring(0, CONFIG.MAX_MESSAGE_LENGTH);
                         ErrorHandler.showError(CONFIG.ERRORS.MESSAGE_TOO_LONG);
                     }
                 });
+                
+                // Initial send button state
+                this.updateSendButtonState();
+            }
+        },
+        
+        autoResizeTextarea: function(textarea) {
+            // Reset height to auto to get the correct scrollHeight
+            textarea.style.height = 'auto';
+            // Set height based on scroll height, with min and max constraints
+            const newHeight = Math.min(Math.max(textarea.scrollHeight, 24), 200);
+            textarea.style.height = newHeight + 'px';
+        },        updateSendButtonState: function() {
+            if (this.sendButton && this.chatInput) {
+                const hasText = this.chatInput.value.trim().length > 0;
+                const isNotLoading = !this.isLoading;
+                const shouldEnable = hasText && isNotLoading;
+                
+                console.log('🔘 Send button state:', {
+                    hasText: hasText,
+                    isNotLoading: isNotLoading,
+                    shouldEnable: shouldEnable,
+                    currentlyDisabled: this.sendButton.disabled
+                });
+                
+                this.sendButton.disabled = !shouldEnable;
             }
         },
 
@@ -74,8 +122,7 @@ if (window.NEAE_CHAT_LOADED) {
             if (!this.connectionStatus || !this.chatInput) {
                 console.warn("Chat elements not found during session initialization.");
                 return; 
-            }
-            this.updateConnectionStatus('connecting', 'Conectando con el asistente...');
+            }            this.updateConnectionStatus('connecting', 'Conectando...');
             ErrorHandler.showLoading('chatLoading', 'Inicializando chat...');
             
             fetch(this.apiBaseUrl + '/chat/start', { 
@@ -93,21 +140,32 @@ if (window.NEAE_CHAT_LOADED) {
                 return response.json();
             }).then(function(data) {
                 self.sessionId = data.session_id;
-                self.updateConnectionStatus('connected', '✅ Conectado al asistente');
+                self.updateConnectionStatus('connected', 'Conectado');
                 self.chatInput.focus();
                 ErrorHandler.hideLoading('chatLoading');
             }).catch(function(error) {
                 console.error('Error initializing session:', error);
-                self.updateConnectionStatus('error', '❌ Error de conexión.');
+                self.updateConnectionStatus('error', 'Error de conexión');
                 ErrorHandler.hideLoading('chatLoading');
                 ErrorHandler.showError(error.message || CONFIG.ERRORS.CONNECTION_FAILED);
             });
-        },
-
-        updateConnectionStatus: function(type, message) {
+        },        updateConnectionStatus: function(type, message) {
             if (!this.connectionStatus) return;
-            this.connectionStatus.className = 'connection-status ' + type;
-            this.connectionStatus.textContent = message;
+            
+            // Update the status indicator class and text
+            const statusIndicator = this.connectionStatus.querySelector('.status-indicator');
+            const statusText = this.connectionStatus.querySelector('span');
+            
+            if (statusIndicator) {
+                statusIndicator.className = `status-indicator ${type}`;
+            }
+            
+            if (statusText) {
+                statusText.textContent = message;
+            } else {
+                // Fallback for simple text update
+                this.connectionStatus.textContent = message;
+            }
         },
 
         sendMessage: function() {
@@ -151,23 +209,67 @@ if (window.NEAE_CHAT_LOADED) {
             }).finally(function() {
                 self.setLoading(false);
             });
-        },
-
-        addMessage: function(content, sender, isLoading) {
+        },        addMessage: function(content, sender, isLoading) {
             if (!this.chatMessages) return;
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message ' + sender;
+            
+            // Create message wrapper
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = `message-wrapper ${sender}-message`;
+            
+            // Create avatar
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = 'message-avatar';
+            const avatarIcon = document.createElement('div');
+            avatarIcon.className = 'avatar-icon';
+            
+            if (sender === 'user') {
+                avatarIcon.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                `;
+            } else {
+                avatarIcon.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                `;
+            }
+            
+            avatarDiv.appendChild(avatarIcon);
+            
+            // Create message content
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
+            const textDiv = document.createElement('div');
+            textDiv.className = 'message-text';
+            
             if (isLoading) {
-                contentDiv.innerHTML = '<div class="loading">🤖 <span class="loading-dots"></span></div>';
+                textDiv.innerHTML = `
+                    <div class="typing-indicator">
+                        <span>El asistente está escribiendo</span>
+                        <div class="typing-dots">
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                        </div>
+                    </div>
+                `;
             } else {
-                contentDiv.innerHTML = this.processMessageContent(content);
+                textDiv.innerHTML = this.processMessageContent(content);
             }
-            messageDiv.appendChild(contentDiv);
-            this.chatMessages.appendChild(messageDiv);
+            
+            contentDiv.appendChild(textDiv);
+            
+            // Assemble message
+            messageWrapper.appendChild(avatarDiv);
+            messageWrapper.appendChild(contentDiv);
+            
+            this.chatMessages.appendChild(messageWrapper);
             this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
-            return messageDiv;
+            
+            return messageWrapper;
         },
 
         processMessageContent: function(content) {
@@ -180,16 +282,28 @@ if (window.NEAE_CHAT_LOADED) {
             processedContent = processedContent.replace(/^[•·-]\s+(.+)$/gm, '<li style="margin-left: 20px; list-style-type: disc;">$1</li>');
             processedContent = processedContent.replace(/^\d+\.\s+(.+)$/gm, '<li style="margin-left: 20px; list-style-type: decimal;">$1</li>');
             return processedContent;
-        },
-
-        setLoading: function(loading) {
+        },        setLoading: function(loading) {
             if (!this.sendButton || !this.chatInput) return;
             this.isLoading = loading;
             this.sendButton.disabled = loading;
             this.chatInput.disabled = loading;
-            this.sendButton.textContent = loading ? '...' : 'Enviar';
-            if (!loading) this.chatInput.focus();
-        }
+            
+            // Update send button icon based on loading state
+            if (loading) {
+                this.sendButton.innerHTML = `
+                    <div class="spinner"></div>
+                `;
+            } else {
+                this.sendButton.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"/>
+                        <polygon points="22,2 15,22 11,13 2,9 22,2"/>
+                    </svg>
+                `;
+                this.chatInput.focus();
+                this.updateSendButtonState();
+            }
+        },
     };
 
     // Initialize function
