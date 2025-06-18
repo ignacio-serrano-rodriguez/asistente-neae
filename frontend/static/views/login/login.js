@@ -3,16 +3,10 @@
 // Use IIFE to prevent conflicts
 (function() {
     'use strict';
-    
-    // Prevent redeclaration
+      // Prevent redeclaration
     if (window.initializeLoginPage) {
-        console.log('Login script already loaded');
         return;
-    }
-
-    function initializeLoginPage() {
-        console.log("Login page loaded from login.js");
-        
+    }    function initializeLoginPage() {
         // Hide user controls when on login page
         SessionManager.hideUserControls();
         
@@ -51,9 +45,7 @@
                         loginError.textContent = errorData.detail || 'Login failed';
                         loginError.style.display = 'block';
                     }
-                }
-            } catch (error) {
-                console.error('Login error:', error);
+                }            } catch (error) {
                 if (loginError) {
                     loginError.textContent = 'An unexpected error occurred during login.';
                     loginError.style.display = 'block';

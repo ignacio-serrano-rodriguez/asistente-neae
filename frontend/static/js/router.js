@@ -52,30 +52,23 @@ async function loadPage(pageName) {
     }
 }
 
-function removeViewScript() {
-    const existingScript = document.getElementById('view-script');
+function removeViewScript() {    const existingScript = document.getElementById('view-script');
     if (existingScript) {
         existingScript.remove();
-        console.log('Removed existing view script');
     }
     
     // Clear any globals to prevent redeclaration errors
-    try {
-        if (window.initializeChatPage) {
+    try {        if (window.initializeChatPage) {
             delete window.initializeChatPage;
-            console.log('Cleared initializeChatPage');
         }
         if (window.initializeLoginPage) {
             delete window.initializeLoginPage;
-            console.log('Cleared initializeLoginPage');
         }
         if (window.NEAEChatInterface) {
             delete window.NEAEChatInterface;
-            console.log('Cleared NEAEChatInterface');
         }
         if (window.NEAE_CHAT_LOADED) {
             delete window.NEAE_CHAT_LOADED;
-            console.log('Cleared NEAE_CHAT_LOADED flag');
         }
     } catch (e) {
         console.warn('Error clearing globals:', e);
@@ -93,9 +86,7 @@ async function loadAndExecuteViewScript(scriptPath, initFunctionName) {
         script.onload = async () => {
             // Wait a bit for the script to fully load and parse
             setTimeout(async () => {
-                if (typeof window[initFunctionName] === 'function') {
-                    try {
-                        console.log(`Executing ${initFunctionName}...`);
+                if (typeof window[initFunctionName] === 'function') {                    try {
                         await window[initFunctionName](); 
                         resolve();
                     } catch (e) {

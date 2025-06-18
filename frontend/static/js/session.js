@@ -131,27 +131,13 @@ class SessionManager {
     }    /**
      * Update usage display in UI
      * @param {Object} userData 
-     */
-    static updateUsageDisplay(userData) {
-        console.log('SessionManager.updateUsageDisplay called with:', userData);
-        
-        const usageInfo = document.getElementById('usageInfo');
+     */    static updateUsageDisplay(userData) {        const usageInfo = document.getElementById('usageInfo');
         const logoutButton = document.getElementById('logoutButton');
         
-        console.log('Found elements:', { 
-            usageInfo: usageInfo, 
-            logoutButton: logoutButton,
-            usageInfoDisplay: usageInfo ? usageInfo.style.display : 'N/A',
-            logoutButtonDisplay: logoutButton ? logoutButton.style.display : 'N/A'
-        });
-        
         if (userData && usageInfo) {
-            usageInfo.textContent = `Uso: ${userData.usage_count} / ${userData.max_uses}`;
-            usageInfo.style.display = 'inline'; // Use inline instead of block for span
-            console.log('Usage info updated and shown');
+            usageInfo.textContent = `Uso: ${userData.usage_count} / ${userData.max_uses}`;            usageInfo.style.display = 'inline'; // Use inline instead of block for span
         }
-        
-        if (logoutButton) {
+          if (logoutButton) {
             // Reset button state in case it was left in loading state
             this.resetLogoutButtonState(logoutButton);
             
@@ -160,40 +146,24 @@ class SessionManager {
                 e.preventDefault();
                 this.handleLogoutClick(logoutButton);
             };
-            console.log('Logout button shown and click handler attached');
-            console.log('Logout button final display:', logoutButton.style.display);
-        } else {
-            console.error('Logout button not found in DOM!');
-            // Let's also check if it exists anywhere
-            const allButtons = document.querySelectorAll('button');
-            console.log('All buttons in DOM:', allButtons);
-            const logoutLinks = document.querySelectorAll('[id*="logout"], [class*="logout"]');
-            console.log('All logout-related elements:', logoutLinks);
         }
     }
 
     /**
      * Increment usage counter in real-time
      * Updates both the cached user data and the UI display
-     */
-    static incrementUsageCounter() {
-        console.log('🔄 SessionManager.incrementUsageCounter called');
-        
+     */    static incrementUsageCounter() {
         // Update cached user data
         const cachedData = this.getCachedUserData();
         if (cachedData) {
             cachedData.usage_count += 1;
             localStorage.setItem(this.STORAGE_KEYS.USER_DATA, JSON.stringify(cachedData));
-            console.log('✅ Cached usage count incremented to:', cachedData.usage_count);
             
             // Update UI immediately
             const usageInfo = document.getElementById('usageInfo');
             if (usageInfo) {
                 usageInfo.textContent = `Uso: ${cachedData.usage_count} / ${cachedData.max_uses}`;
-                console.log('✅ Usage display updated to:', cachedData.usage_count);
             }
-        } else {
-            console.warn('⚠️ No cached user data found to increment');
         }
     }
 
@@ -201,10 +171,8 @@ class SessionManager {
      * Reset logout button to its default state
      */
     static resetLogoutButtonState(logoutButton) {
-        if (logoutButton) {
-            logoutButton.textContent = 'Cerrar Sesión';
+        if (logoutButton) {            logoutButton.textContent = 'Cerrar Sesión';
             logoutButton.disabled = false;
-            console.log('✅ Logout button state reset to default');
         }
     }
 
@@ -214,12 +182,10 @@ class SessionManager {
     static async handleLogoutClick(logoutButton) {
         if (!logoutButton) return;
         
-        try {
-            // Set loading state
+        try {            // Set loading state
             const originalText = logoutButton.textContent;
             logoutButton.textContent = 'Cerrando...';
             logoutButton.disabled = true;
-            console.log('🔄 Logout button set to loading state');
             
             // Perform logout
             await this.logout();
@@ -234,23 +200,17 @@ class SessionManager {
         }
     }    /**
      * Hide user controls (for login page)
-     */
-    static hideUserControls() {
-        console.log('🔄 SessionManager.hideUserControls called');
+     */    static hideUserControls() {
         const usageInfo = document.getElementById('usageInfo');
         const logoutButton = document.getElementById('logoutButton');
         
-        console.log('Hiding controls:', { usageInfo, logoutButton });
-        
         if (usageInfo) {
             usageInfo.style.display = 'none';
-            console.log('✅ Usage info hidden');
         }
         if (logoutButton) {
             // Reset button state before hiding
             this.resetLogoutButtonState(logoutButton);
             logoutButton.style.display = 'none';
-            console.log('✅ Logout button hidden and state reset');
         }
     }
 }
