@@ -1,6 +1,6 @@
 const routes = {
-    '/': 'chat',
-    '/login': 'login'
+    '/': { page: 'chat', requiresAuth: true },
+    '/login': { page: 'login', requiresAuth: false }
 };
 
 const rootDiv = document.getElementById('app');
@@ -9,30 +9,32 @@ function navigateTo(path) {
     window.location.hash = path;
 }
 
-async function loadPage(page) {
+async function loadPage(pageName) {
     let content = '';
     let htmlPath = '';
     let viewScriptPath = '';
     let viewInitFunction = null;
 
-    switch (page) {
+    switch (pageName) {
         case 'login':
             htmlPath = '/static/views/login/login.html';
             viewScriptPath = '/static/views/login/login.js';
             viewInitFunction = 'initializeLoginPage';
+            // Hide user controls on login page
+            SessionManager.hideUserControls();
             break;
         case 'chat':
-            // if (!getCookie('auth_key')) { // Old check
-            if (sessionStorage.getItem('isUserLoggedIn') !== 'true') { // New check
-                navigateTo('/login');
-                return;
-            }
             htmlPath = '/static/views/chat/chat.html';
             viewScriptPath = '/static/views/chat/chat.js';
             viewInitFunction = 'initializeChatPage';
+            // Update user controls for authenticated user
+            const userData = await SessionManager.fetchUserData();
+            if (userData) {
+                SessionManager.updateUsageDisplay(userData);
+            }
             break;
         default:
-            content = '<h1>404 - Page Not Found</h1>';
+            content = '<h1>404 - Página No Encontrada</h1>';
             if (rootDiv) rootDiv.innerHTML = content;
             removeViewScript();
             return;
@@ -88,28 +90,31 @@ async function loadAndExecuteViewScript(scriptPath, initFunctionName) {
 }
 
 function getCookie(name) {
-    // ...existing code...
+    return SessionManager.getCookie(name);
 }
 
-// Add a global logout function that can be called from chat.js
-window.handleLogout = async function() {
-    sessionStorage.removeItem('isUserLoggedIn');
-    // Optionally, tell the server to clear its session/cookie if necessary
-    try {
-        // Example: Call a logout endpoint on the server
-        // await fetch('/logout', { method: 'POST' }); // Assuming you have a POST /logout endpoint
-    } catch (error) {
-        console.error('Error during server logout:', error);
-    }
-    navigateTo('/login');
+// Global logout function
+window.handleLogout = function() {
+    SessionManager.logout();
 }
 
 function router() {
     const path = window.location.hash.slice(1) || '/';
-    // Ensure the path is valid, otherwise default to login or a known route
-    const pageKey = routes[path] ? path : '/login'; 
-    const pageName = routes[pageKey] || 'login'; // Default to login if route is unknown
-    loadPage(pageName);
+    const route = routes[path] || routes['/login']; // Default to login if route is unknown
+    
+    // Check authentication requirements
+    if (route.requiresAuth && !SessionManager.isAuthenticated()) {
+        navigateTo('/login');
+        return;
+    }
+    
+    // If user is authenticated and trying to access login, redirect to chat
+    if (route.page === 'login' && SessionManager.isAuthenticated()) {
+        navigateTo('/');
+        return;
+    }
+    
+    loadPage(route.page);
 }
 
 window.addEventListener('hashchange', router);

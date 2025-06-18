@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request, Form, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uuid
@@ -98,7 +97,9 @@ app.add_middleware(
 )
 
 app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
-templates = Jinja2Templates(directory="frontend/templates")
+
+# Remove template dependency for pure SPA approach
+# templates = Jinja2Templates(directory="frontend/templates")
 
 fake_keys_db = {
     "supersecretkey": {"count": 0, "max_uses": 100, "user_id": "user1"},
@@ -110,16 +111,15 @@ chat_sessions = {} # Almacén en memoria para sesiones de chat
 def get_current_user_key(request: Request):
     return request.cookies.get("auth_key")
 
-@app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request, auth_key: str = Depends(get_current_user_key)):
-    # Always serve the SPA shell. Client-side JS will handle routing.
-    return templates.TemplateResponse("index.html", {"request": request})
+@app.get("/", response_class=FileResponse)
+async def read_root():
+    # Serve the SPA shell for all routes
+    return FileResponse("frontend/static/index.html")
 
-@app.get("/login", response_class=HTMLResponse)
-async def login_page_get(request: Request):
-    # This route is no longer needed for GET by the SPA.
-    # Redirect to root, SPA will handle showing login if not authenticated.
-    return RedirectResponse(url="/", status_code=302)
+@app.get("/login", response_class=FileResponse)
+async def login_page_get():
+    # SPA handles all routing, serve the same index.html
+    return FileResponse("frontend/static/index.html")
 
 @app.post("/login")
 async def login_submit(request: Request, key: str = Form(...)):
@@ -132,13 +132,10 @@ async def login_submit(request: Request, key: str = Form(...)):
         # SPA expects a JSON error for failed login
         raise HTTPException(status_code=401, detail="Invalid key")
 
-@app.get("/chat", response_class=HTMLResponse)
-async def chat_interface_get(request: Request, auth_key: str = Depends(get_current_user_key)):
-    # Always serve the SPA shell. Client-side JS will handle routing.
-    # If auth_key is required here for some initial server-side check before serving SPA,
-    # it can be kept, but SPA itself will also check auth.
-    # For simplicity, let's assume SPA handles all auth checks post-load.
-    return templates.TemplateResponse("index.html", {"request": request})
+@app.get("/chat", response_class=FileResponse)
+async def chat_interface_get():
+    # SPA handles all routing, serve the same index.html
+    return FileResponse("frontend/static/index.html")
 
 @app.get("/logout")
 async def logout(request: Request):

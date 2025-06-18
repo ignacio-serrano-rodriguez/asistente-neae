@@ -1,0 +1,161 @@
+/**
+ * Centralized Session Management for NEAE Assistant
+ * Handles authentication state using cookies (server-side) and localStorage (client-side)
+ */
+
+class SessionManager {
+    static STORAGE_KEYS = {
+        IS_LOGGED_IN: 'isUserLoggedIn',
+        API_KEY: 'apiKey',
+        USER_DATA: 'userData'
+    };
+
+    /**
+     * Check if user is authenticated
+     * @returns {boolean}
+     */
+    static isAuthenticated() {
+        // Primary check: cookie exists (server-side auth)
+        const authCookie = this.getCookie('auth_key');
+        // Secondary check: client-side flag
+        const clientFlag = localStorage.getItem(this.STORAGE_KEYS.IS_LOGGED_IN) === 'true';
+        
+        return !!(authCookie && clientFlag);
+    }
+
+    /**
+     * Set authentication state
+     * @param {boolean} authenticated 
+     * @param {string} apiKey 
+     */
+    static setAuthenticated(authenticated, apiKey = null) {
+        if (authenticated && apiKey) {
+            localStorage.setItem(this.STORAGE_KEYS.IS_LOGGED_IN, 'true');
+            localStorage.setItem(this.STORAGE_KEYS.API_KEY, apiKey);
+        } else {
+            localStorage.removeItem(this.STORAGE_KEYS.IS_LOGGED_IN);
+            localStorage.removeItem(this.STORAGE_KEYS.API_KEY);
+            localStorage.removeItem(this.STORAGE_KEYS.USER_DATA);
+        }
+    }
+
+    /**
+     * Get stored API key
+     * @returns {string|null}
+     */
+    static getApiKey() {
+        return localStorage.getItem(this.STORAGE_KEYS.API_KEY);
+    }
+
+    /**
+     * Fetch and cache user data from server
+     * @returns {Promise<Object|null>}
+     */
+    static async fetchUserData() {
+        if (!this.isAuthenticated()) {
+            return null;
+        }
+
+        try {
+            const response = await fetch('/api/user-data', {
+                method: 'GET',
+                credentials: 'include' // Include cookies
+            });
+
+            if (response.ok) {
+                const userData = await response.json();
+                localStorage.setItem(this.STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
+                return userData;
+            } else if (response.status === 401) {
+                // Session expired
+                this.logout();
+                return null;
+            }
+        } catch (error) {
+            console.error('Error fetching user data:', error);
+        }
+
+        return null;
+    }
+
+    /**
+     * Get cached user data
+     * @returns {Object|null}
+     */
+    static getCachedUserData() {
+        const data = localStorage.getItem(this.STORAGE_KEYS.USER_DATA);
+        return data ? JSON.parse(data) : null;
+    }
+
+    /**
+     * Perform logout (client and server)
+     * @returns {Promise<void>}
+     */
+    static async logout() {
+        try {
+            // Clear server session
+            await fetch('/logout', {
+                method: 'GET',
+                credentials: 'include'
+            });
+        } catch (error) {
+            console.error('Error during server logout:', error);
+        }
+
+        // Clear client session
+        this.setAuthenticated(false);
+        
+        // Redirect to login
+        window.location.hash = '/login';
+    }
+
+    /**
+     * Utility function to get cookie value
+     * @param {string} name 
+     * @returns {string|null}
+     */
+    static getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) {
+            return parts.pop().split(';').shift();
+        }
+        return null;
+    }
+
+    /**
+     * Update usage display in UI
+     * @param {Object} userData 
+     */
+    static updateUsageDisplay(userData) {
+        const usageInfo = document.getElementById('usageInfo');
+        const logoutButton = document.getElementById('logoutButton');
+        
+        if (userData && usageInfo) {
+            usageInfo.textContent = `Uso: ${userData.usage_count} / ${userData.max_uses}`;
+            usageInfo.style.display = 'block';
+        }
+        
+        if (logoutButton) {
+            logoutButton.style.display = 'block';
+            logoutButton.onclick = (e) => {
+                e.preventDefault();
+                this.logout();
+            };
+        }
+    }
+
+    /**
+     * Hide user controls (for login page)
+     */
+    static hideUserControls() {
+        const usageInfo = document.getElementById('usageInfo');
+        const logoutButton = document.getElementById('logoutButton');
+        
+        if (usageInfo) usageInfo.style.display = 'none';
+        if (logoutButton) logoutButton.style.display = 'none';
+    }
+}
+
+// Make SessionManager globally available
+window.SessionManager = SessionManager;

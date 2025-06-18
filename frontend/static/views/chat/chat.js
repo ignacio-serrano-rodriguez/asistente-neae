@@ -30,38 +30,44 @@ class NEAEChatInterface {
                     this.sendMessage();
                 }
             });
-            this.chatInput.addEventListener('input', (e) => {
-                if (e.target.value.length > CONFIG.MAX_MESSAGE_LENGTH) {
+            this.chatInput.addEventListener('input', (e) => {                if (e.target.value.length > CONFIG.MAX_MESSAGE_LENGTH) {
                     e.target.value = e.target.value.substring(0, CONFIG.MAX_MESSAGE_LENGTH);
-                    this.showError(CONFIG.ERRORS.MESSAGE_TOO_LONG);
+                    ErrorHandler.showError(CONFIG.ERRORS.MESSAGE_TOO_LONG);
                 }
             });
         }
-    }
-
-    async initializeSession() {
+    }    async initializeSession() {
         if (!this.connectionStatus || !this.chatInput) {
             console.warn("Chat elements not found during session initialization.");
             return; 
         }
         this.updateConnectionStatus('connecting', 'Conectando con el asistente...');
+        ErrorHandler.showLoading('chatLoading', 'Inicializando chat...');
+        
         try {
             const response = await fetch(`${this.apiBaseUrl}/chat/start`, { 
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({})
+                credentials: 'include' // Include cookies for auth
             });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            
+            if (!response.ok) {
+                const errorMessage = await ErrorHandler.handleAPIError(response, 'session initialization');
+                throw new Error(errorMessage);
+            }
+            
             const data = await response.json();
             this.sessionId = data.session_id;
             this.updateConnectionStatus('connected', '✅ Conectado al asistente');
             this.chatInput.focus();
+            ErrorHandler.hideLoading('chatLoading');
         } catch (error) {
             console.error('Error initializing session:', error);
             this.updateConnectionStatus('error', '❌ Error de conexión.');
-            this.showError(CONFIG.ERRORS.CONNECTION_FAILED);
+            ErrorHandler.hideLoading('chatLoading');
+            ErrorHandler.showError(error.message || CONFIG.ERRORS.CONNECTION_FAILED);
         }
     }
 
@@ -69,40 +75,38 @@ class NEAEChatInterface {
         if (!this.connectionStatus) return;
         this.connectionStatus.className = `connection-status ${type}`;
         this.connectionStatus.textContent = message;
-    }
-
-    async sendMessage() {
+    }    async sendMessage() {
         if (!this.chatInput || !this.sessionId) return;
         const message = this.chatInput.value.trim();
         if (!message || this.isLoading) return;
+        
         this.addMessage(message, 'user');
         this.chatInput.value = '';
         this.setLoading(true);
         const loadingMessage = this.addMessage('El asistente está pensando', 'assistant', true);
+        
         try {
             const response = await fetch(`${this.apiBaseUrl}/chat/send`, { 
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                credentials: 'include', // Include cookies for auth
                 body: JSON.stringify({ session_id: this.sessionId, pregunta: message })
             });
+            
             if(loadingMessage && loadingMessage.remove) loadingMessage.remove();
+            
             if (!response.ok) { 
-                if (response.status === 403) {
-                    throw new Error(CONFIG.ERRORS.INVALID_API_KEY);
-                } else if (response.status === 404) {
-                    throw new Error(CONFIG.ERRORS.SESSION_EXPIRED);
-                } else {
-                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-                }
+                const errorMessage = await ErrorHandler.handleAPIError(response, 'sending message');
+                throw new Error(errorMessage);
             }
-            const data = await response.json();
-            this.addMessage(data.respuesta, 'assistant');
+            
+            const data = await response.json();            this.addMessage(data.respuesta, 'assistant');
         } catch (error) {
             console.error('Error sending message:', error);
             if(loadingMessage && loadingMessage.remove) loadingMessage.remove();
-            this.showError(`Error al enviar el mensaje: ${error.message}`);
+            ErrorHandler.showError(error.message || 'Error al enviar el mensaje');
         } finally {
             this.setLoading(false);
         }
@@ -132,20 +136,7 @@ class NEAEChatInterface {
         processedContent = processedContent.replace(/^(📘|🧠|🏫|🧩|💡|🌐|✅|🧑‍🏫|🗂️|⚙️|🎯|🔍|⚠️|🔗|🎥|📋|🚫|📝|🚨|📄|🌍|🔧|📚|📱|🎵|🎤|🎧)([^\n]+)/gm, '<h4>$1$2</h4>');
         processedContent = processedContent.replace(/^(🔧|📝|🎥|📚|📱|🌍|💙|👥|🎨|🧑‍💻|📖|🎮|🔊|📊|📑|🎯|✨)([^\n]+)/gm, '<h5 style="margin-top: 10px; color: #555;">$1$2</h5>');
         processedContent = processedContent.replace(/^[•·-]\s+(.+)$/gm, '<li style="margin-left: 20px; list-style-type: disc;">$1</li>');
-        processedContent = processedContent.replace(/^\d+\.\s+(.+)$/gm, '<li style="margin-left: 20px; list-style-type: decimal;">$1</li>');
-        return processedContent;
-    }
-
-    showError(message) {
-        if (!this.chatMessages) return;
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-message';
-        errorDiv.textContent = message;
-        const messageContainer = document.createElement('div');
-        messageContainer.className = 'message assistant';
-        messageContainer.appendChild(errorDiv);
-        this.chatMessages.appendChild(messageContainer);
-        this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+        processedContent = processedContent.replace(/^\d+\.\s+(.+)$/gm, '<li style="margin-left: 20px; list-style-type: decimal;">$1</li>');        return processedContent;
     }
 
     setLoading(loading) {

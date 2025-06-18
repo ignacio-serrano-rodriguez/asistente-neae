@@ -290,6 +290,73 @@ body {
     border: 1px solid #f5c6cb;
 }
 
+/* Error, Loading, and Success Message Styles */
+.error-message, .loading-message, .success-message {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 15px 25px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    z-index: 1000;
+    max-width: 90%;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: none;
+    transition: all 0.3s ease-in-out;
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+}
+
+.error-message.show, .loading-message.show, .success-message.show {
+    display: block;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.error-message {
+    background-color: #fee;
+    color: #c53030;
+    border: 1px solid #feb2b2;
+}
+
+.loading-message {
+    background-color: #e6f3ff;
+    color: #2b6cb0;
+    border: 1px solid #90cdf4;
+}
+
+.success-message {
+    background-color: #f0fff4;
+    color: #22543d;
+    border: 1px solid #9ae6b4;
+}
+
+/* Loading animation for loading messages */
+.loading-message::after {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-left: 10px;
+    border: 2px solid #2b6cb0;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Improved spacing for message containers when they appear */
+.error-message + #app, .loading-message + #app, .success-message + #app {
+    margin-top: 80px;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) { /* Tablet */
     .chat-container {

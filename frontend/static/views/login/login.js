@@ -15,7 +15,7 @@ function initializeLoginPage() {
     if (loginForm) {
         loginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            const key = keyInput.value; // Use the keyInput defined earlier
+            const key = keyInput.value;
             const loginError = document.getElementById('loginError');
 
             if (loginError) loginError.style.display = 'none'; // Hide previous errors
@@ -24,14 +24,16 @@ function initializeLoginPage() {
                 const response = await fetch('/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({ key })
+                    body: new URLSearchParams({ key }),
+                    credentials: 'include' // Include cookies
                 });
+                
                 if (response.ok) {
-                    sessionStorage.setItem('isUserLoggedIn', 'true'); // Set login flag
-                    // Store the key and redirect to chat page
-                    localStorage.setItem('apiKey', key);
-                    // No need to pass the key in the URL anymore if it's in localStorage
-                    window.location.href = '/chat'; 
+                    // Set authentication state
+                    SessionManager.setAuthenticated(true, key);
+                    
+                    // Navigate to chat page
+                    window.location.hash = '/';
                 } else {
                     const errorData = await response.json();
                     if (loginError) {
